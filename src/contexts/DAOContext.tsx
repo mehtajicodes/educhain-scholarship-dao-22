@@ -192,7 +192,7 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
           {
             title,
             description,
-            amount,
+            amount: amount.toString(), // Convert number to string for the Supabase insert
             creator_address: address,
             deadline: new Date(deadline).toISOString(),
           }
