@@ -1,4 +1,3 @@
-
 import { ReactNode, createContext, useContext, useState, useEffect } from 'react';
 import { useWallet } from '@/hooks/use-wallet';
 import { useToast } from '@/hooks/use-toast';
@@ -188,15 +187,13 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
       // Insert new scholarship into Supabase
       const { data, error } = await supabase
         .from('scholarships')
-        .insert([
-          {
-            title,
-            description,
-            amount: amount.toString(), // Convert number to string for the Supabase insert
-            creator_address: address,
-            deadline: new Date(deadline).toISOString(),
-          }
-        ])
+        .insert({
+          title,
+          description,
+          amount: amount.toString(), // Convert number to string for the Supabase insert
+          creator_address: address,
+          deadline: new Date(deadline).toISOString(),
+        })
         .select();
 
       if (error) throw error;
