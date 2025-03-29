@@ -1,19 +1,45 @@
 
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { useDAO, Scholarship } from "@/contexts/DAOContext";
 import { Award, Check, Users, FileText } from "lucide-react";
-import { useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 export function GovernmentDashboard() {
   const { scholarships, approveScholarship, loading } = useDAO();
   const [selectedScholarship, setSelectedScholarship] = useState<string | null>(null);
+  const [applicationsData, setApplicationsData] = useState<any[]>([]);
 
   // Filter scholarships that are pending and have applicants
   const pendingScholarships = scholarships.filter(
     (s) => s.status === 'pending' && s.applicants.length > 0
   );
+
+  const handleViewApplicants = async (scholarshipId: string) => {
+    if (selectedScholarship === scholarshipId) {
+      setSelectedScholarship(null);
+      setApplicationsData([]);
+      return;
+    }
+
+    try {
+      // Fetch applications for this scholarship
+      const { data, error } = await supabase
+        .from('applications')
+        .select('*')
+        .eq('scholarship_id', scholarshipId)
+        .eq('status', 'pending');
+
+      if (error) throw error;
+
+      setApplicationsData(data || []);
+      setSelectedScholarship(scholarshipId);
+    } catch (error) {
+      console.error("Error fetching applications:", error);
+    }
+  };
 
   const handleApprove = (scholarship: Scholarship, applicantAddress: string) => {
     approveScholarship(scholarship.id, applicantAddress);
@@ -79,11 +105,9 @@ export function GovernmentDashboard() {
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => setSelectedScholarship(
-                            selectedScholarship === scholarship.id ? null : scholarship.id
-                          )}
+                          onClick={() => handleViewApplicants(scholarship.id)}
                         >
-                          View Applicants
+                          {selectedScholarship === scholarship.id ? "Hide Applicants" : "View Applicants"}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -100,27 +124,32 @@ export function GovernmentDashboard() {
                 Applicants
               </h4>
               
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Address</TableHead>
-                      <TableHead>Action</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {scholarships
-                      .find(s => s.id === selectedScholarship)
-                      ?.applicants.map((applicant) => (
-                        <TableRow key={applicant}>
-                          <TableCell className="font-mono text-sm">{applicant}</TableCell>
+              {applicationsData.length === 0 ? (
+                <div className="text-center text-gray-500 py-4">
+                  No pending applicants found
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Address</TableHead>
+                        <TableHead>Application Date</TableHead>
+                        <TableHead>Action</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {applicationsData.map((application) => (
+                        <TableRow key={application.id}>
+                          <TableCell className="font-mono text-sm">{application.applicant_address}</TableCell>
+                          <TableCell>{new Date(application.created_at).toLocaleDateString()}</TableCell>
                           <TableCell>
                             <Button 
                               size="sm" 
                               className="bg-edu-primary hover:bg-edu-primary/90"
                               onClick={() => handleApprove(
                                 scholarships.find(s => s.id === selectedScholarship)!,
-                                applicant
+                                application.applicant_address
                               )}
                               disabled={loading}
                             >
@@ -130,9 +159,10 @@ export function GovernmentDashboard() {
                           </TableCell>
                         </TableRow>
                       ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
             </div>
           )}
         </CardContent>

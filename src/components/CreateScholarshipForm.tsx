@@ -26,7 +26,7 @@ export function CreateScholarshipForm() {
   const [amount, setAmount] = useState("");
   const [durationDays, setDurationDays] = useState("30");
   
-  const { createScholarship, loading } = useDAO();
+  const { createScholarship, loading, userRole } = useDAO();
   const { toast } = useToast();
   const { isVerified } = useAnonAadhaarContext();
   const { isConnected } = useWallet();
@@ -83,7 +83,7 @@ export function CreateScholarshipForm() {
       <DialogTrigger asChild>
         <Button 
           className="bg-edu-primary hover:bg-edu-primary/90"
-          disabled={!isConnected || !isVerified}
+          disabled={!isConnected || (userRole === 'student' && !isVerified) || userRole !== 'government'}
         >
           <Plus className="mr-2 h-4 w-4" />
           Create Scholarship

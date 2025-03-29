@@ -1,20 +1,59 @@
 
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { useDAO } from "@/contexts/DAOContext";
 import { Banknote, FileText, Calendar, Check } from "lucide-react";
+import { useWallet } from "@/hooks/use-wallet";
+import { supabase } from "@/integrations/supabase/client";
 
 export function FinancierDashboard() {
   const { scholarships, fundScholarship, loading } = useDAO();
+  const { address } = useWallet();
+  const [fundingInProgress, setFundingInProgress] = useState<string | null>(null);
   
   // Filter scholarships that are approved but not yet funded
   const approvedScholarships = scholarships.filter(
     (s) => s.status === 'approved'
   );
 
-  const handleFund = (scholarshipId: string) => {
-    fundScholarship(scholarshipId);
+  const handleFund = async (scholarshipId: string) => {
+    if (loading || fundingInProgress) return;
+    
+    setFundingInProgress(scholarshipId);
+    try {
+      // Find the approved application for this scholarship
+      const { data: applications, error } = await supabase
+        .from('applications')
+        .select('*')
+        .eq('scholarship_id', scholarshipId)
+        .eq('status', 'approved');
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (!applications || applications.length === 0) {
+        throw new Error("No approved application found");
+      }
+      
+      // Simulate blockchain transaction with MetaMask
+      if (window.ethereum) {
+        // In a real implementation, we would send EDU tokens here
+        // For now, we'll just simulate a successful transaction
+        console.log("Simulating a blockchain transaction...");
+        
+        // Process the scholarship funding
+        await fundScholarship(scholarshipId, applications[0].id);
+      } else {
+        throw new Error("MetaMask not installed");
+      }
+    } catch (error) {
+      console.error("Funding error:", error);
+    } finally {
+      setFundingInProgress(null);
+    }
   };
 
   // Calculate total funded amount
@@ -81,16 +120,16 @@ export function FinancierDashboard() {
                       <TableCell className="font-mono text-xs">
                         {scholarship.recipient?.slice(0, 6)}...{scholarship.recipient?.slice(-4)}
                       </TableCell>
-                      <TableCell>{new Date(scholarship.createdAt).toLocaleDateString()}</TableCell>
+                      <TableCell>{new Date(scholarship.created_at).toLocaleDateString()}</TableCell>
                       <TableCell>
                         <Button 
                           size="sm" 
                           className="bg-edu-primary hover:bg-edu-primary/90"
                           onClick={() => handleFund(scholarship.id)}
-                          disabled={loading}
+                          disabled={loading || fundingInProgress === scholarship.id}
                         >
                           <Banknote className="mr-1 h-4 w-4" />
-                          Fund
+                          {fundingInProgress === scholarship.id ? "Processing..." : "Fund"}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -131,7 +170,7 @@ export function FinancierDashboard() {
                         <TableCell className="font-mono text-xs">
                           {scholarship.recipient?.slice(0, 6)}...{scholarship.recipient?.slice(-4)}
                         </TableCell>
-                        <TableCell>{new Date(scholarship.createdAt).toLocaleDateString()}</TableCell>
+                        <TableCell>{new Date(scholarship.created_at).toLocaleDateString()}</TableCell>
                         <TableCell>
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
                             <Check className="mr-1 h-3 w-3" />

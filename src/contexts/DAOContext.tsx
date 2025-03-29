@@ -2,6 +2,7 @@
 import { ReactNode, createContext, useContext, useState, useEffect } from 'react';
 import { useWallet } from '@/hooks/use-wallet';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export type ScholarshipStatus = 'pending' | 'approved' | 'rejected' | 'completed';
 export type UserRole = 'student' | 'government' | 'financier' | 'regular';
@@ -11,14 +12,14 @@ export type Scholarship = {
   title: string;
   description: string;
   amount: number;
-  creator: string;
+  creator_address: string;
   recipient?: string;
   status: ScholarshipStatus;
   votes: {
     for: number;
     against: number;
   };
-  createdAt: number;
+  created_at: number;
   deadline: number;
   voters: string[];
   applicants: string[];
@@ -30,7 +31,7 @@ type DAOContextType = {
   voteOnScholarship: (id: string, voteFor: boolean) => Promise<void>;
   applyForScholarship: (id: string) => Promise<void>;
   approveScholarship: (id: string, recipientAddress: string) => Promise<void>;
-  fundScholarship: (id: string) => Promise<void>;
+  fundScholarship: (id: string, applicationId: string) => Promise<void>;
   myScholarships: Scholarship[];
   pendingScholarships: Scholarship[];
   loading: boolean;
@@ -56,52 +57,10 @@ const DAOContext = createContext<DAOContextType>({
 
 export const useDAO = () => useContext(DAOContext);
 
-// Mock data - In a real app, this would be stored on-chain or in a database
-const initialScholarships: Scholarship[] = [
-  {
-    id: '1',
-    title: 'Computer Science Excellence Scholarship',
-    description: 'For outstanding students pursuing Computer Science degrees.',
-    amount: 5000,
-    creator: '0x1234567890123456789012345678901234567890',
-    status: 'pending',
-    votes: { for: 15, against: 2 },
-    createdAt: Date.now() - 7 * 24 * 60 * 60 * 1000, // 7 days ago
-    deadline: Date.now() + 14 * 24 * 60 * 60 * 1000, // 14 days from now
-    voters: [],
-    applicants: [],
-  },
-  {
-    id: '2',
-    title: 'Environmental Research Grant',
-    description: 'Supporting students researching environmental sustainability.',
-    amount: 3500,
-    creator: '0x2345678901234567890123456789012345678901',
-    status: 'approved',
-    recipient: '0x3456789012345678901234567890123456789012',
-    votes: { for: 25, against: 5 },
-    createdAt: Date.now() - 30 * 24 * 60 * 60 * 1000, // 30 days ago
-    deadline: Date.now() - 15 * 24 * 60 * 60 * 1000, // 15 days ago
-    voters: [],
-    applicants: ['0x3456789012345678901234567890123456789012'],
-  },
-];
-
-// Save scholarships to localStorage
-const saveScholarships = (scholarships: Scholarship[]) => {
-  localStorage.setItem('scholarships', JSON.stringify(scholarships));
-};
-
-// Load scholarships from localStorage
-const loadScholarships = (): Scholarship[] => {
-  const saved = localStorage.getItem('scholarships');
-  return saved ? JSON.parse(saved) : initialScholarships;
-};
-
 export const DAOProvider = ({ children }: { children: ReactNode }) => {
   const { address } = useWallet();
   const { toast } = useToast();
-  const [scholarships, setScholarships] = useState<Scholarship[]>(loadScholarships());
+  const [scholarships, setScholarships] = useState<Scholarship[]>([]);
   const [loading, setLoading] = useState(false);
 
   // Determine user role based on address
@@ -113,14 +72,86 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
     ? 'financier'
     : 'student';
 
-  // Save scholarships to localStorage whenever they change
+  // Load scholarships from Supabase
   useEffect(() => {
-    saveScholarships(scholarships);
-  }, [scholarships]);
+    fetchScholarships();
+  }, []);
+
+  const fetchScholarships = async () => {
+    setLoading(true);
+    try {
+      // Fetch scholarships from Supabase
+      const { data: scholarshipsData, error } = await supabase
+        .from('scholarships')
+        .select('*');
+
+      if (error) throw error;
+
+      // Fetch applications for each scholarship
+      const { data: applicationsData, error: applicationsError } = await supabase
+        .from('applications')
+        .select('*');
+
+      if (applicationsError) throw applicationsError;
+
+      // Fetch votes for each scholarship
+      const { data: votesData, error: votesError } = await supabase
+        .from('votes')
+        .select('*');
+
+      if (votesError) throw votesError;
+
+      // Transform data to match our Scholarship type
+      const transformedScholarships: Scholarship[] = scholarshipsData.map((scholarship) => {
+        const scholarshipApplications = applicationsData?.filter(
+          (app) => app.scholarship_id === scholarship.id
+        ) || [];
+        
+        const scholarshipVotes = votesData?.filter(
+          (vote) => vote.scholarship_id === scholarship.id
+        ) || [];
+        
+        const applicants = scholarshipApplications.map((app) => app.applicant_address);
+        const voters = scholarshipVotes.map((vote) => vote.voter_address);
+        
+        const votesFor = scholarshipVotes.filter((vote) => vote.vote_type).length;
+        const votesAgainst = scholarshipVotes.filter((vote) => !vote.vote_type).length;
+
+        return {
+          id: scholarship.id,
+          title: scholarship.title,
+          description: scholarship.description,
+          amount: parseFloat(scholarship.amount),
+          creator_address: scholarship.creator_address,
+          recipient: scholarshipApplications.find(app => app.status === 'approved')?.applicant_address,
+          status: scholarship.status as ScholarshipStatus,
+          votes: {
+            for: votesFor,
+            against: votesAgainst,
+          },
+          created_at: new Date(scholarship.created_at).getTime(),
+          deadline: new Date(scholarship.deadline).getTime(),
+          voters,
+          applicants,
+        };
+      });
+
+      setScholarships(transformedScholarships);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load scholarships",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Filter scholarships relevant to the current user
   const myScholarships = scholarships.filter(
-    (s) => s.creator === address || s.recipient === address || s.applicants.includes(address || '')
+    (s) => s.creator_address === address || s.recipient === address || s.applicants.includes(address || '')
   );
 
   // Filter pending scholarships that haven't reached deadline
@@ -143,28 +174,40 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
+    if (userRole !== 'government') {
+      toast({
+        title: "Not authorized",
+        description: "Only government officers can create scholarships",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
-      // In a real app, this would be a smart contract call
-      const newScholarship: Scholarship = {
-        id: Date.now().toString(),
-        title,
-        description,
-        amount,
-        creator: address,
-        status: 'pending',
-        votes: { for: 0, against: 0 },
-        createdAt: Date.now(),
-        deadline,
-        voters: [],
-        applicants: [],
-      };
+      // Insert new scholarship into Supabase
+      const { data, error } = await supabase
+        .from('scholarships')
+        .insert([
+          {
+            title,
+            description,
+            amount,
+            creator_address: address,
+            deadline: new Date(deadline).toISOString(),
+          }
+        ])
+        .select();
 
-      setScholarships([...scholarships, newScholarship]);
+      if (error) throw error;
+
       toast({
         title: "Scholarship created",
         description: "Your scholarship proposal has been submitted",
       });
+
+      // Refresh scholarships
+      fetchScholarships();
     } catch (error) {
       console.error("Error creating scholarship:", error);
       toast({
@@ -189,27 +232,61 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
 
     setLoading(true);
     try {
-      // In a real app, this would be a smart contract call
-      setScholarships(
-        scholarships.map((s) => {
-          if (s.id === id && !s.voters.includes(address)) {
-            return {
-              ...s,
-              votes: {
-                for: voteFor ? s.votes.for + 1 : s.votes.for,
-                against: voteFor ? s.votes.against : s.votes.against + 1,
-              },
-              voters: [...s.voters, address],
-            };
+      // Check if user has already voted
+      const { data: existingVote, error: checkError } = await supabase
+        .from('votes')
+        .select('*')
+        .eq('scholarship_id', id)
+        .eq('voter_address', address);
+
+      if (checkError) throw checkError;
+
+      if (existingVote && existingVote.length > 0) {
+        toast({
+          title: "Already voted",
+          description: "You have already voted on this scholarship",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Insert vote into Supabase
+      const { error } = await supabase
+        .from('votes')
+        .insert([
+          {
+            scholarship_id: id,
+            voter_address: address,
+            vote_type: voteFor,
           }
-          return s;
-        })
-      );
+        ]);
+
+      if (error) throw error;
+
+      // Update scholarship vote count
+      const scholarshipToUpdate = scholarships.find(s => s.id === id);
+      if (scholarshipToUpdate) {
+        const votesFor = voteFor ? scholarshipToUpdate.votes.for + 1 : scholarshipToUpdate.votes.for;
+        const votesAgainst = voteFor ? scholarshipToUpdate.votes.against : scholarshipToUpdate.votes.against + 1;
+
+        const { error: updateError } = await supabase
+          .from('scholarships')
+          .update({
+            votes_for: votesFor,
+            votes_against: votesAgainst,
+          })
+          .eq('id', id);
+
+        if (updateError) throw updateError;
+      }
 
       toast({
         title: "Vote submitted",
         description: `You voted ${voteFor ? "for" : "against"} the scholarship`,
       });
+
+      // Refresh scholarships
+      fetchScholarships();
     } catch (error) {
       console.error("Error voting on scholarship:", error);
       toast({
@@ -234,23 +311,43 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
 
     setLoading(true);
     try {
-      // In a real app, this would be a smart contract call or API request
-      setScholarships(
-        scholarships.map((s) => {
-          if (s.id === id && s.status === 'pending' && !s.applicants.includes(address)) {
-            return {
-              ...s,
-              applicants: [...s.applicants, address],
-            };
+      // Check if already applied
+      const { data: existingApplication, error: checkError } = await supabase
+        .from('applications')
+        .select('*')
+        .eq('scholarship_id', id)
+        .eq('applicant_address', address);
+
+      if (checkError) throw checkError;
+
+      if (existingApplication && existingApplication.length > 0) {
+        toast({
+          title: "Already applied",
+          description: "You have already applied for this scholarship",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Insert application into Supabase
+      const { error } = await supabase
+        .from('applications')
+        .insert([
+          {
+            scholarship_id: id,
+            applicant_address: address,
           }
-          return s;
-        })
-      );
+        ]);
+
+      if (error) throw error;
 
       toast({
         title: "Application submitted",
         description: "You have applied for this scholarship",
       });
+
+      // Refresh scholarships
+      fetchScholarships();
     } catch (error) {
       console.error("Error applying for scholarship:", error);
       toast({
@@ -275,23 +372,47 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
 
     setLoading(true);
     try {
-      setScholarships(
-        scholarships.map((s) => {
-          if (s.id === id && s.status === 'pending') {
-            return {
-              ...s,
-              status: 'approved',
-              recipient: recipientAddress,
-            };
-          }
-          return s;
-        })
-      );
+      // Find the application to approve
+      const { data: applications, error: appError } = await supabase
+        .from('applications')
+        .select('*')
+        .eq('scholarship_id', id)
+        .eq('applicant_address', recipientAddress);
+
+      if (appError) throw appError;
+
+      if (!applications || applications.length === 0) {
+        toast({
+          title: "Error",
+          description: "Application not found",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Update application status
+      const { error: updateAppError } = await supabase
+        .from('applications')
+        .update({ status: 'approved' })
+        .eq('id', applications[0].id);
+
+      if (updateAppError) throw updateAppError;
+
+      // Update scholarship status
+      const { error: updateScholarshipError } = await supabase
+        .from('scholarships')
+        .update({ status: 'approved' })
+        .eq('id', id);
+
+      if (updateScholarshipError) throw updateScholarshipError;
 
       toast({
         title: "Scholarship approved",
         description: "The scholarship has been approved",
       });
+
+      // Refresh scholarships
+      fetchScholarships();
     } catch (error) {
       console.error("Error approving scholarship:", error);
       toast({
@@ -304,7 +425,7 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const fundScholarship = async (id: string) => {
+  const fundScholarship = async (id: string, applicationId: string) => {
     if (!address || address.toLowerCase() !== FINANCIER_ADDRESS.toLowerCase()) {
       toast({
         title: "Not authorized",
@@ -316,22 +437,75 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
 
     setLoading(true);
     try {
-      setScholarships(
-        scholarships.map((s) => {
-          if (s.id === id && s.status === 'approved') {
-            return {
-              ...s,
-              status: 'completed',
-            };
+      // Find the approved application
+      const { data: applications, error: appError } = await supabase
+        .from('applications')
+        .select('*')
+        .eq('id', applicationId)
+        .eq('status', 'approved');
+
+      if (appError) throw appError;
+
+      if (!applications || applications.length === 0) {
+        toast({
+          title: "Error",
+          description: "Approved application not found",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Find the scholarship
+      const { data: scholarshipData, error: scholarshipError } = await supabase
+        .from('scholarships')
+        .select('*')
+        .eq('id', id)
+        .eq('status', 'approved');
+
+      if (scholarshipError) throw scholarshipError;
+
+      if (!scholarshipData || scholarshipData.length === 0) {
+        toast({
+          title: "Error",
+          description: "Approved scholarship not found",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Create transaction record
+      const { error: transactionError } = await supabase
+        .from('transactions')
+        .insert([
+          {
+            scholarship_id: id,
+            application_id: applicationId,
+            financier_address: address,
+            recipient_address: applications[0].applicant_address,
+            amount: scholarshipData[0].amount,
           }
-          return s;
-        })
-      );
+        ]);
+
+      if (transactionError) throw transactionError;
+
+      // Call MetaMask to make payment (this would be implemented with actual blockchain integration)
+      // For now, we'll simulate the transaction succeeding
+
+      // Update scholarship status to completed
+      const { error: updateError } = await supabase
+        .from('scholarships')
+        .update({ status: 'completed' })
+        .eq('id', id);
+
+      if (updateError) throw updateError;
 
       toast({
         title: "Scholarship funded",
         description: "The scholarship has been funded and completed",
       });
+
+      // Refresh scholarships
+      fetchScholarships();
     } catch (error) {
       console.error("Error funding scholarship:", error);
       toast({

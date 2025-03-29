@@ -1,6 +1,11 @@
 
 import { useState, useEffect } from 'react';
 
+interface MetaMaskError {
+  code: number;
+  message: string;
+}
+
 const EDUCHAIN_CHAIN_ID = '0xa0348';  // '656476' in decimal is '0xa0348' in hex
 const EDUCHAIN_CONFIG = {
   chainId: EDUCHAIN_CHAIN_ID,

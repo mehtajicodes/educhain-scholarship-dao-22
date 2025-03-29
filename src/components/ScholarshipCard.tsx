@@ -1,4 +1,5 @@
 
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -7,6 +8,7 @@ import { useWallet } from "@/hooks/use-wallet";
 import { useAnonAadhaarContext } from "@/contexts/AnonAadhaarContext";
 import { ThumbsUp, ThumbsDown, Calendar, Clock, Award, User } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ScholarshipCardProps {
   scholarship: Scholarship;
@@ -22,27 +24,64 @@ export function ScholarshipCard({
   const { voteOnScholarship, applyForScholarship, userRole } = useDAO();
   const { isConnected, address } = useWallet();
   const { isVerified } = useAnonAadhaarContext();
+  const [hasVoted, setHasVoted] = useState(false);
+  const [hasApplied, setHasApplied] = useState(isApplied);
 
   const {
     id,
     title,
     description,
     amount,
-    creator,
+    creator_address,
+    recipient,
     status,
     votes,
-    createdAt,
+    created_at,
     deadline,
     voters,
     applicants,
   } = scholarship;
 
+  useEffect(() => {
+    if (address) {
+      checkUserStatus();
+    }
+  }, [address, id]);
+
+  const checkUserStatus = async () => {
+    if (!address) return;
+
+    try {
+      // Check if user has voted
+      const { data: voteData, error: voteError } = await supabase
+        .from('votes')
+        .select('*')
+        .eq('scholarship_id', id)
+        .eq('voter_address', address);
+
+      if (!voteError && voteData && voteData.length > 0) {
+        setHasVoted(true);
+      }
+
+      // Check if user has applied
+      const { data: appData, error: appError } = await supabase
+        .from('applications')
+        .select('*')
+        .eq('scholarship_id', id)
+        .eq('applicant_address', address);
+
+      if (!appError && appData && appData.length > 0) {
+        setHasApplied(true);
+      }
+    } catch (error) {
+      console.error("Error checking user status:", error);
+    }
+  };
+
   const totalVotes = votes.for + votes.against;
   const votesFor = totalVotes > 0 ? (votes.for / totalVotes) * 100 : 0;
   
-  const hasVoted = voters.includes(address || '');
-  const hasApplied = applicants.includes(address || '');
-  const isCreator = creator === address;
+  const isCreator = creator_address === address;
   
   const timeLeft = deadline > Date.now() 
     ? formatDistanceToNow(deadline, { addSuffix: true })
@@ -51,11 +90,13 @@ export function ScholarshipCard({
   const handleVote = (voteFor: boolean) => {
     if (!isConnected || !isVerified) return;
     voteOnScholarship(id, voteFor);
+    setHasVoted(true); // Optimistic update
   };
   
   const handleApply = () => {
     if (!isConnected || !isVerified) return;
     applyForScholarship(id);
+    setHasApplied(true); // Optimistic update
   };
 
   return (
@@ -69,7 +110,7 @@ export function ScholarshipCard({
         </div>
         <div className="text-sm text-gray-500 mt-1 flex items-center gap-2">
           <User className="h-3 w-3" />
-          <span>Created by {isCreator ? 'you' : `${creator.substring(0, 6)}...${creator.substring(creator.length - 4)}`}</span>
+          <span>Created by {isCreator ? 'you' : `${creator_address.substring(0, 6)}...${creator_address.substring(creator_address.length - 4)}`}</span>
         </div>
       </CardHeader>
       
@@ -94,7 +135,7 @@ export function ScholarshipCard({
           <div className="flex flex-wrap justify-between text-sm text-gray-500 gap-y-2">
             <div className="flex items-center">
               <Calendar className="h-4 w-4 mr-1" />
-              <span>Created {formatDistanceToNow(createdAt, { addSuffix: true })}</span>
+              <span>Created {formatDistanceToNow(created_at, { addSuffix: true })}</span>
             </div>
             <div className="flex items-center">
               <Clock className="h-4 w-4 mr-1" />

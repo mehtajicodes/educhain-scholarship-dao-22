@@ -9,6 +9,38 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      applications: {
+        Row: {
+          applicant_address: string
+          created_at: string
+          id: string
+          scholarship_id: string
+          status: string
+        }
+        Insert: {
+          applicant_address: string
+          created_at?: string
+          id?: string
+          scholarship_id: string
+          status?: string
+        }
+        Update: {
+          applicant_address?: string
+          created_at?: string
+          id?: string
+          scholarship_id?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applications_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       code_purchases: {
         Row: {
           buyer_address: string
@@ -38,6 +70,128 @@ export type Database = {
           transaction_hash?: string
         }
         Relationships: []
+      }
+      scholarships: {
+        Row: {
+          amount: number
+          created_at: string
+          creator_address: string
+          deadline: string
+          description: string
+          id: string
+          status: string
+          title: string
+          votes_against: number
+          votes_for: number
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          creator_address: string
+          deadline: string
+          description: string
+          id?: string
+          status?: string
+          title: string
+          votes_against?: number
+          votes_for?: number
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          creator_address?: string
+          deadline?: string
+          description?: string
+          id?: string
+          status?: string
+          title?: string
+          votes_against?: number
+          votes_for?: number
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          application_id: string
+          created_at: string
+          financier_address: string
+          id: string
+          recipient_address: string
+          scholarship_id: string
+          status: string
+          transaction_hash: string | null
+        }
+        Insert: {
+          amount: number
+          application_id: string
+          created_at?: string
+          financier_address: string
+          id?: string
+          recipient_address: string
+          scholarship_id: string
+          status?: string
+          transaction_hash?: string | null
+        }
+        Update: {
+          amount?: number
+          application_id?: string
+          created_at?: string
+          financier_address?: string
+          id?: string
+          recipient_address?: string
+          scholarship_id?: string
+          status?: string
+          transaction_hash?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "applications"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      votes: {
+        Row: {
+          created_at: string
+          id: string
+          scholarship_id: string
+          vote_type: boolean
+          voter_address: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          scholarship_id: string
+          vote_type: boolean
+          voter_address: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          scholarship_id?: string
+          vote_type?: boolean
+          voter_address?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "votes_scholarship_id_fkey"
+            columns: ["scholarship_id"]
+            isOneToOne: false
+            referencedRelation: "scholarships"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
