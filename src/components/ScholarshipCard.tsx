@@ -1,168 +1,172 @@
 
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Scholarship, useDAO } from "@/contexts/DAOContext";
-import { useWallet } from "@/hooks/use-wallet";
-import { formatDistanceToNow } from "date-fns";
-import { ArrowRight, Check, Info, Users, X } from "lucide-react";
-import { 
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { Progress } from "@/components/ui/progress";
-import { Badge } from "@/components/ui/badge";
+import { useDAO, Scholarship } from "@/contexts/DAOContext";
+import { useWallet } from "@/hooks/use-wallet";
 import { useAnonAadhaarContext } from "@/contexts/AnonAadhaarContext";
+import { ThumbsUp, ThumbsDown, Calendar, Clock, Award, User } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
 
 interface ScholarshipCardProps {
   scholarship: Scholarship;
   showActions?: boolean;
+  isApplied?: boolean;
 }
 
-export function ScholarshipCard({ scholarship, showActions = true }: ScholarshipCardProps) {
-  const { voteOnScholarship, applyForScholarship, loading } = useDAO();
-  const { address } = useWallet();
+export function ScholarshipCard({ 
+  scholarship, 
+  showActions = true,
+  isApplied = false
+}: ScholarshipCardProps) {
+  const { voteOnScholarship, applyForScholarship, userRole } = useDAO();
+  const { isConnected, address } = useWallet();
   const { isVerified } = useAnonAadhaarContext();
+
+  const {
+    id,
+    title,
+    description,
+    amount,
+    creator,
+    status,
+    votes,
+    createdAt,
+    deadline,
+    voters,
+    applicants,
+  } = scholarship;
+
+  const totalVotes = votes.for + votes.against;
+  const votesFor = totalVotes > 0 ? (votes.for / totalVotes) * 100 : 0;
   
-  const hasVoted = scholarship.voters.includes(address || '');
-  const isCreator = scholarship.creator === address;
-  const isApplicant = scholarship.recipient === address;
-  const totalVotes = scholarship.votes.for + scholarship.votes.against;
-  const approvalPercentage = totalVotes > 0 
-    ? Math.round((scholarship.votes.for / totalVotes) * 100) 
-    : 0;
+  const hasVoted = voters.includes(address || '');
+  const hasApplied = applicants.includes(address || '');
+  const isCreator = creator === address;
   
-  const timeLeft = scholarship.deadline > Date.now() 
-    ? formatDistanceToNow(scholarship.deadline, { addSuffix: true }) 
-    : 'Expired';
+  const timeLeft = deadline > Date.now() 
+    ? formatDistanceToNow(deadline, { addSuffix: true })
+    : 'Deadline passed';
   
-  const getStatusBadge = () => {
-    switch(scholarship.status) {
-      case 'pending':
-        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">Pending</Badge>;
-      case 'approved':
-        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Approved</Badge>;
-      case 'rejected':
-        return <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">Rejected</Badge>;
-      case 'completed':
-        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Completed</Badge>;
-      default:
-        return null;
-    }
+  const handleVote = (voteFor: boolean) => {
+    if (!isConnected || !isVerified) return;
+    voteOnScholarship(id, voteFor);
+  };
+  
+  const handleApply = () => {
+    if (!isConnected || !isVerified) return;
+    applyForScholarship(id);
   };
 
   return (
-    <Card className="overflow-hidden border-t-4 border-t-edu-primary">
-      <CardHeader className="pb-2">
-        <div className="flex justify-between items-start">
-          <CardTitle className="text-xl">{scholarship.title}</CardTitle>
-          {getStatusBadge()}
+    <Card className="overflow-hidden">
+      <CardHeader className="bg-edu-light pb-4">
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-xl text-edu-dark">{title}</CardTitle>
+          <div className="rounded-full bg-edu-primary/10 text-edu-primary px-3 py-1 text-sm font-medium">
+            {amount} EDU
+          </div>
         </div>
-        <CardDescription className="flex justify-between items-center">
-          <span>Created {formatDistanceToNow(scholarship.createdAt, { addSuffix: true })}</span>
-          <span className="font-medium text-edu-primary">
-            {scholarship.amount} EDU
-          </span>
-        </CardDescription>
+        <div className="text-sm text-gray-500 mt-1 flex items-center gap-2">
+          <User className="h-3 w-3" />
+          <span>Created by {isCreator ? 'you' : `${creator.substring(0, 6)}...${creator.substring(creator.length - 4)}`}</span>
+        </div>
       </CardHeader>
-      <CardContent>
-        <p className="text-sm text-gray-600 mb-4">{scholarship.description}</p>
+      
+      <CardContent className="pt-4">
+        <p className="text-gray-700 mb-4">{description}</p>
         
-        <div className="space-y-3">
-          <div className="flex justify-between text-sm">
-            <span className="flex items-center gap-1">
-              <Users className="h-4 w-4 text-gray-500" />
-              <span>{totalVotes} votes</span>
-            </span>
-            <span className="text-gray-600">Deadline: {timeLeft}</span>
-          </div>
-          
-          <div className="space-y-1">
-            <div className="flex justify-between text-sm font-medium">
-              <span>Approval</span>
-              <span>{approvalPercentage}%</span>
+        <div className="space-y-4">
+          <div>
+            <div className="flex justify-between text-sm mb-1">
+              <div className="flex items-center">
+                <ThumbsUp className="h-4 w-4 text-green-500 mr-1" />
+                <span>{votes.for} votes for</span>
+              </div>
+              <div className="flex items-center">
+                <span>{votes.against} votes against</span>
+                <ThumbsDown className="h-4 w-4 text-red-500 ml-1" />
+              </div>
             </div>
-            <Progress value={approvalPercentage} className="h-2" />
+            <Progress value={votesFor} className="h-2" />
           </div>
           
-          <div className="flex justify-between text-sm">
-            <span className="text-green-600">For: {scholarship.votes.for}</span>
-            <span className="text-red-600">Against: {scholarship.votes.against}</span>
+          <div className="flex flex-wrap justify-between text-sm text-gray-500 gap-y-2">
+            <div className="flex items-center">
+              <Calendar className="h-4 w-4 mr-1" />
+              <span>Created {formatDistanceToNow(createdAt, { addSuffix: true })}</span>
+            </div>
+            <div className="flex items-center">
+              <Clock className="h-4 w-4 mr-1" />
+              <span>{timeLeft}</span>
+            </div>
           </div>
+          
+          {applicants.length > 0 && (
+            <div className="mt-2 text-sm text-gray-500">
+              <span className="flex items-center gap-1">
+                <Award className="h-4 w-4" />
+                {applicants.length} {applicants.length === 1 ? 'application' : 'applications'}
+              </span>
+            </div>
+          )}
         </div>
       </CardContent>
       
-      {showActions && scholarship.status === 'pending' && (
-        <CardFooter className="flex flex-col gap-2 pt-0">
-          <div className="w-full h-px bg-gray-100 mb-2"></div>
-          
-          {!isCreator && !isApplicant && !hasVoted && (
-            <div className="flex gap-2 w-full">
+      {showActions && (
+        <CardFooter className="border-t bg-gray-50 gap-2 flex-wrap">
+          {status === 'pending' && deadline > Date.now() && !isCreator && (
+            <>
               <Button
                 variant="outline"
-                className="flex-1 border-green-200 hover:bg-green-50 hover:text-green-700"
-                onClick={() => voteOnScholarship(scholarship.id, true)}
-                disabled={loading || !isVerified}
+                size="sm"
+                onClick={() => handleVote(true)}
+                disabled={!isConnected || !isVerified || hasVoted}
+                className="flex-1"
               >
-                <Check className="mr-2 h-4 w-4" />
+                <ThumbsUp className="mr-1 h-4 w-4" />
                 Vote For
               </Button>
+              
               <Button
                 variant="outline"
-                className="flex-1 border-red-200 hover:bg-red-50 hover:text-red-700"
-                onClick={() => voteOnScholarship(scholarship.id, false)}
-                disabled={loading || !isVerified}
+                size="sm"
+                onClick={() => handleVote(false)}
+                disabled={!isConnected || !isVerified || hasVoted}
+                className="flex-1"
               >
-                <X className="mr-2 h-4 w-4" />
+                <ThumbsDown className="mr-1 h-4 w-4" />
                 Vote Against
               </Button>
+              
+              {userRole === 'student' && (
+                <Button
+                  className="bg-edu-primary hover:bg-edu-primary/90 flex-1"
+                  size="sm"
+                  onClick={handleApply}
+                  disabled={!isConnected || !isVerified || hasApplied}
+                >
+                  {hasApplied ? 'Applied' : 'Apply'}
+                </Button>
+              )}
+            </>
+          )}
+
+          {(status !== 'pending' || deadline <= Date.now() || isCreator) && (
+            <div className="w-full text-center text-sm text-gray-500">
+              {isCreator 
+                ? "You created this scholarship" 
+                : status !== 'pending' 
+                  ? `This scholarship is ${status}` 
+                  : "Voting period has ended"}
             </div>
           )}
-          
-          {isCreator && (
-            <div className="text-sm text-center text-gray-500 flex items-center justify-center gap-1 mt-1">
-              <Info className="h-4 w-4" />
-              <span>You created this scholarship</span>
-            </div>
-          )}
-          
-          {hasVoted && !isCreator && !isApplicant && (
-            <div className="text-sm text-center text-gray-500 flex items-center justify-center gap-1 mt-1">
-              <Check className="h-4 w-4 text-green-500" />
-              <span>You have voted on this scholarship</span>
-            </div>
-          )}
-          
-          {!isCreator && !isApplicant && scholarship.recipient === undefined && (
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div>
-                    <Button
-                      variant="default"
-                      className="w-full mt-2 bg-edu-secondary hover:bg-edu-secondary/90"
-                      onClick={() => applyForScholarship(scholarship.id)}
-                      disabled={loading || !isVerified}
-                    >
-                      Apply for Scholarship
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                  </div>
-                </TooltipTrigger>
-                {!isVerified && (
-                  <TooltipContent>
-                    <p>You need to verify your identity with Aadhaar first</p>
-                  </TooltipContent>
-                )}
-              </Tooltip>
-            </TooltipProvider>
-          )}
-          
-          {isApplicant && (
-            <div className="text-sm text-center text-blue-500 flex items-center justify-center gap-1 mt-1">
-              <Check className="h-4 w-4" />
-              <span>You have applied for this scholarship</span>
+
+          {isApplied && (
+            <div className="w-full flex justify-center">
+              <div className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                Application submitted
+              </div>
             </div>
           )}
         </CardFooter>

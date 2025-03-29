@@ -4,6 +4,7 @@ import { useWallet } from '@/hooks/use-wallet';
 import { useToast } from '@/hooks/use-toast';
 
 export type ScholarshipStatus = 'pending' | 'approved' | 'rejected' | 'completed';
+export type UserRole = 'student' | 'government' | 'financier' | 'regular';
 
 export type Scholarship = {
   id: string;
@@ -20,6 +21,7 @@ export type Scholarship = {
   createdAt: number;
   deadline: number;
   voters: string[];
+  applicants: string[];
 };
 
 type DAOContextType = {
@@ -27,19 +29,29 @@ type DAOContextType = {
   createScholarship: (title: string, description: string, amount: number, deadline: number) => Promise<void>;
   voteOnScholarship: (id: string, voteFor: boolean) => Promise<void>;
   applyForScholarship: (id: string) => Promise<void>;
+  approveScholarship: (id: string, recipientAddress: string) => Promise<void>;
+  fundScholarship: (id: string) => Promise<void>;
   myScholarships: Scholarship[];
   pendingScholarships: Scholarship[];
   loading: boolean;
+  userRole: UserRole;
 };
+
+// Fixed addresses for special roles
+const GOVERNMENT_ADDRESS = '0x303C226B1b66F07717D35f5E7243028950Eb1ff1';
+const FINANCIER_ADDRESS = '0x388175A170A0D8fCB99FF8867C00860fCF95A7Cc';
 
 const DAOContext = createContext<DAOContextType>({
   scholarships: [],
   createScholarship: async () => {},
   voteOnScholarship: async () => {},
   applyForScholarship: async () => {},
+  approveScholarship: async () => {},
+  fundScholarship: async () => {},
   myScholarships: [],
   pendingScholarships: [],
   loading: false,
+  userRole: 'regular',
 });
 
 export const useDAO = () => useContext(DAOContext);
@@ -57,6 +69,7 @@ const initialScholarships: Scholarship[] = [
     createdAt: Date.now() - 7 * 24 * 60 * 60 * 1000, // 7 days ago
     deadline: Date.now() + 14 * 24 * 60 * 60 * 1000, // 14 days from now
     voters: [],
+    applicants: [],
   },
   {
     id: '2',
@@ -70,18 +83,44 @@ const initialScholarships: Scholarship[] = [
     createdAt: Date.now() - 30 * 24 * 60 * 60 * 1000, // 30 days ago
     deadline: Date.now() - 15 * 24 * 60 * 60 * 1000, // 15 days ago
     voters: [],
+    applicants: ['0x3456789012345678901234567890123456789012'],
   },
 ];
+
+// Save scholarships to localStorage
+const saveScholarships = (scholarships: Scholarship[]) => {
+  localStorage.setItem('scholarships', JSON.stringify(scholarships));
+};
+
+// Load scholarships from localStorage
+const loadScholarships = (): Scholarship[] => {
+  const saved = localStorage.getItem('scholarships');
+  return saved ? JSON.parse(saved) : initialScholarships;
+};
 
 export const DAOProvider = ({ children }: { children: ReactNode }) => {
   const { address } = useWallet();
   const { toast } = useToast();
-  const [scholarships, setScholarships] = useState<Scholarship[]>(initialScholarships);
+  const [scholarships, setScholarships] = useState<Scholarship[]>(loadScholarships());
   const [loading, setLoading] = useState(false);
+
+  // Determine user role based on address
+  const userRole: UserRole = !address 
+    ? 'regular'
+    : address.toLowerCase() === GOVERNMENT_ADDRESS.toLowerCase()
+    ? 'government'
+    : address.toLowerCase() === FINANCIER_ADDRESS.toLowerCase()
+    ? 'financier'
+    : 'student';
+
+  // Save scholarships to localStorage whenever they change
+  useEffect(() => {
+    saveScholarships(scholarships);
+  }, [scholarships]);
 
   // Filter scholarships relevant to the current user
   const myScholarships = scholarships.filter(
-    (s) => s.creator === address || s.recipient === address
+    (s) => s.creator === address || s.recipient === address || s.applicants.includes(address || '')
   );
 
   // Filter pending scholarships that haven't reached deadline
@@ -118,6 +157,7 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
         createdAt: Date.now(),
         deadline,
         voters: [],
+        applicants: [],
       };
 
       setScholarships([...scholarships, newScholarship]);
@@ -197,10 +237,10 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
       // In a real app, this would be a smart contract call or API request
       setScholarships(
         scholarships.map((s) => {
-          if (s.id === id && s.status === 'pending') {
+          if (s.id === id && s.status === 'pending' && !s.applicants.includes(address)) {
             return {
               ...s,
-              recipient: address,
+              applicants: [...s.applicants, address],
             };
           }
           return s;
@@ -223,6 +263,87 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const approveScholarship = async (id: string, recipientAddress: string) => {
+    if (!address || address.toLowerCase() !== GOVERNMENT_ADDRESS.toLowerCase()) {
+      toast({
+        title: "Not authorized",
+        description: "Only government officers can approve scholarships",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      setScholarships(
+        scholarships.map((s) => {
+          if (s.id === id && s.status === 'pending') {
+            return {
+              ...s,
+              status: 'approved',
+              recipient: recipientAddress,
+            };
+          }
+          return s;
+        })
+      );
+
+      toast({
+        title: "Scholarship approved",
+        description: "The scholarship has been approved",
+      });
+    } catch (error) {
+      console.error("Error approving scholarship:", error);
+      toast({
+        title: "Error",
+        description: "Failed to approve scholarship",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fundScholarship = async (id: string) => {
+    if (!address || address.toLowerCase() !== FINANCIER_ADDRESS.toLowerCase()) {
+      toast({
+        title: "Not authorized",
+        description: "Only financiers can fund scholarships",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      setScholarships(
+        scholarships.map((s) => {
+          if (s.id === id && s.status === 'approved') {
+            return {
+              ...s,
+              status: 'completed',
+            };
+          }
+          return s;
+        })
+      );
+
+      toast({
+        title: "Scholarship funded",
+        description: "The scholarship has been funded and completed",
+      });
+    } catch (error) {
+      console.error("Error funding scholarship:", error);
+      toast({
+        title: "Error",
+        description: "Failed to fund scholarship",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <DAOContext.Provider
       value={{
@@ -230,9 +351,12 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
         createScholarship,
         voteOnScholarship,
         applyForScholarship,
+        approveScholarship,
+        fundScholarship,
         myScholarships,
         pendingScholarships,
         loading,
+        userRole,
       }}
     >
       {children}
