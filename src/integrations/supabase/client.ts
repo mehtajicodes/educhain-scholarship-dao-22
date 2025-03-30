@@ -6,7 +6,55 @@ import type { Database } from './types';
 const SUPABASE_URL = "https://vmrffmebmvyqesmpevnl.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZtcmZmbWVibXZ5cWVzbXBldm5sIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDE5ODc0MTksImV4cCI6MjA1NzU2MzQxOX0.YNDPHNtxQNmZuV7ZAFbUtojENskPdqSH0lyaV5bDgUw";
 
-// Import the supabase client like this:
-// import { supabase } from "@/integrations/supabase/client";
+// Create the Supabase client with proper authentication configuration
+export const supabase = createClient<Database>(
+  SUPABASE_URL, 
+  SUPABASE_PUBLISHABLE_KEY,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: false,
+    },
+    global: {
+      headers: {
+        // Add any custom headers needed for authentication
+      },
+    },
+  }
+);
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY);
+// This function should be called when a wallet is connected
+// to authenticate the user with Supabase using their wallet address
+export const authenticateWithWallet = async (address: string) => {
+  if (!address) return { error: "No wallet address provided" };
+  
+  try {
+    // First check if user exists with this wallet address
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: `${address.toLowerCase()}@wallet.edu`, // Create a pseudo email using wallet address
+      password: address, // Use wallet address as password (for demo purposes)
+    });
+    
+    if (error) {
+      // If user doesn't exist, create a new account
+      if (error.message.includes('Invalid login credentials')) {
+        return await supabase.auth.signUp({
+          email: `${address.toLowerCase()}@wallet.edu`,
+          password: address,
+          options: {
+            data: {
+              wallet_address: address,
+            },
+          },
+        });
+      }
+      return { error };
+    }
+    
+    return { data };
+  } catch (error) {
+    console.error("Error authenticating with wallet:", error);
+    return { error };
+  }
+};

@@ -1,5 +1,6 @@
 
 import { useState, useEffect } from 'react';
+import { supabase, authenticateWithWallet } from '@/integrations/supabase/client';
 
 interface MetaMaskError {
   code: number;
@@ -23,6 +24,7 @@ export const useWallet = () => {
   const [isConnected, setIsConnected] = useState(false);
   const [address, setAddress] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const checkNetwork = async () => {
     if (!window.ethereum) return false;
@@ -49,6 +51,25 @@ export const useWallet = () => {
     }
   };
 
+  const authenticateUser = async (walletAddress: string) => {
+    if (!walletAddress) return;
+    
+    try {
+      const { data, error } = await authenticateWithWallet(walletAddress);
+      
+      if (error) {
+        console.error("Authentication error:", error);
+        return false;
+      }
+      
+      setIsAuthenticated(true);
+      return true;
+    } catch (error) {
+      console.error("Error during authentication:", error);
+      return false;
+    }
+  };
+
   const connectWallet = async () => {
     if (!window.ethereum) {
       alert('Please install MetaMask!');
@@ -68,8 +89,13 @@ export const useWallet = () => {
         method: 'eth_requestAccounts',
       });
 
-      setAddress(accounts[0]);
+      const currentAddress = accounts[0];
+      setAddress(currentAddress);
       setIsConnected(true);
+      
+      // Authenticate with Supabase using the wallet address
+      await authenticateUser(currentAddress);
+      
       setIsLoading(false);
     } catch (error) {
       console.error('Error connecting wallet:', error);
@@ -81,6 +107,10 @@ export const useWallet = () => {
   const disconnectWallet = () => {
     setAddress('');
     setIsConnected(false);
+    setIsAuthenticated(false);
+    
+    // Sign out from Supabase
+    supabase.auth.signOut();
   };
 
   const formatAddress = (addr: string) => {
@@ -91,20 +121,30 @@ export const useWallet = () => {
   useEffect(() => {
     if (window.ethereum) {
       window.ethereum.request({ method: 'eth_accounts' })
-        .then((accounts: string[]) => {
+        .then(async (accounts: string[]) => {
           if (accounts.length > 0) {
             setAddress(accounts[0]);
             setIsConnected(true);
+            
+            // Re-authenticate if wallet is already connected
+            await authenticateUser(accounts[0]);
           }
         });
 
-      window.ethereum.on('accountsChanged', (accounts: string[]) => {
+      window.ethereum.on('accountsChanged', async (accounts: string[]) => {
         if (accounts.length > 0) {
           setAddress(accounts[0]);
           setIsConnected(true);
+          
+          // Re-authenticate when account changes
+          await authenticateUser(accounts[0]);
         } else {
           setAddress('');
           setIsConnected(false);
+          setIsAuthenticated(false);
+          
+          // Sign out from Supabase
+          supabase.auth.signOut();
         }
       });
 
@@ -118,6 +158,7 @@ export const useWallet = () => {
     isConnected,
     address,
     isLoading,
+    isAuthenticated,
     connectWallet,
     disconnectWallet,
     formatAddress,

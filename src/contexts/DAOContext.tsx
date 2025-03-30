@@ -1,4 +1,3 @@
-
 import { ReactNode, createContext, useContext, useState, useEffect } from 'react';
 import { useWallet } from '@/hooks/use-wallet';
 import { useToast } from '@/hooks/use-toast';
@@ -25,19 +24,6 @@ export type Scholarship = {
   applicants: string[];
 };
 
-type DAOContextType = {
-  scholarships: Scholarship[];
-  createScholarship: (title: string, description: string, amount: number, deadline: number) => Promise<void>;
-  voteOnScholarship: (id: string, voteFor: boolean) => Promise<void>;
-  applyForScholarship: (id: string) => Promise<void>;
-  approveScholarship: (id: string, recipientAddress: string) => Promise<void>;
-  fundScholarship: (id: string, applicationId: string) => Promise<void>;
-  myScholarships: Scholarship[];
-  pendingScholarships: Scholarship[];
-  loading: boolean;
-  userRole: UserRole;
-};
-
 const GOVERNMENT_ADDRESS = '0x303C226B1b66F07717D35f5E7243028950Eb1ff1';
 const FINANCIER_ADDRESS = '0x388175A170A0D8fCB99FF8867C00860fCF95A7Cc';
 
@@ -57,7 +43,7 @@ const DAOContext = createContext<DAOContextType>({
 export const useDAO = () => useContext(DAOContext);
 
 export const DAOProvider = ({ children }: { children: ReactNode }) => {
-  const { address } = useWallet();
+  const { address, isAuthenticated } = useWallet();
   const { toast } = useToast();
   const [scholarships, setScholarships] = useState<Scholarship[]>([]);
   const [loading, setLoading] = useState(false);
@@ -165,6 +151,15 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication required",
+        description: "Please authenticate with your wallet first",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (userRole !== 'government') {
       toast({
         title: "Not authorized",
@@ -212,6 +207,15 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
       toast({
         title: "Wallet not connected",
         description: "Please connect your wallet first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication required",
+        description: "Please authenticate with your wallet first",
         variant: "destructive",
       });
       return;
@@ -290,6 +294,15 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication required",
+        description: "Please authenticate with your wallet first",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setLoading(true);
     try {
       const { data: existingApplication, error: checkError } = await supabase
@@ -341,6 +354,15 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
       toast({
         title: "Not authorized",
         description: "Only government officers can approve scholarships",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication required",
+        description: "Please authenticate with your wallet first",
         variant: "destructive",
       });
       return;
@@ -402,6 +424,15 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
       toast({
         title: "Not authorized",
         description: "Only financiers can fund scholarships",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication required",
+        description: "Please authenticate with your wallet first",
         variant: "destructive",
       });
       return;
