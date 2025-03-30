@@ -48,7 +48,7 @@ const Scholarships = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            {userRole === 'student' && <CreateScholarshipForm />}
+            {userRole === 'government' && <CreateScholarshipForm />}
           </div>
         </div>
         

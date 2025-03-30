@@ -180,7 +180,7 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
         .insert({
           title,
           description,
-          amount,
+          amount: amount.toString(),
           creator_address: address,
           deadline: new Date(deadline).toISOString(),
         })
