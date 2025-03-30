@@ -182,7 +182,7 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
         .insert({
           title,
           description,
-          amount,  // This is now used as a number directly
+          amount: amount.toString(), // Convert number to string to match expected type
           creator_address: address,
           deadline: new Date(deadline).toISOString(),
         })
