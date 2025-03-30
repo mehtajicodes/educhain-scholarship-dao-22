@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
@@ -43,7 +42,10 @@ export function FinancierDashboard() {
         throw error;
       }
       
-      if (!applications || applications.length === 0) {
+      // Fix here: Use a new variable for the fallback applications
+      let applicationsToUse = applications;
+      
+      if (!applicationsToUse || applicationsToUse.length === 0) {
         // Try to find any application for this scholarship
         const { data: allApplications, error: allAppsError } = await supabase
           .from('applications')
@@ -56,7 +58,7 @@ export function FinancierDashboard() {
         }
         
         // Use the first application we find
-        applications = allApplications;
+        applicationsToUse = allApplications;
       }
       
       // Process payment through MetaMask
@@ -80,7 +82,7 @@ export function FinancierDashboard() {
             method: 'eth_sendTransaction',
             params: [{
               from: fromAddress,
-              to: applications[0].applicant_address,
+              to: applicationsToUse[0].applicant_address,
               value: amountInWei,
               gas: '0x5208', // 21000 gas
             }],
@@ -92,7 +94,7 @@ export function FinancierDashboard() {
           });
           
           // Update scholarship status
-          await fundScholarship(scholarshipId, applications[0].id);
+          await fundScholarship(scholarshipId, applicationsToUse[0].id);
           
         } catch (txError: any) {
           console.error("Transaction error:", txError);
