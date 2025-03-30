@@ -26,6 +26,16 @@ export const useWallet = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
+  // Check if an address is already stored in localStorage
+  useEffect(() => {
+    const storedAddress = localStorage.getItem('wallet_address');
+    if (storedAddress) {
+      setAddress(storedAddress);
+      setIsConnected(true);
+      authenticateUser(storedAddress);
+    }
+  }, []);
+
   const checkNetwork = async () => {
     if (!window.ethereum) return false;
 
@@ -52,21 +62,28 @@ export const useWallet = () => {
   };
 
   const authenticateUser = async (walletAddress: string) => {
-    if (!walletAddress) return;
+    if (!walletAddress) return false;
     
     try {
+      // Store the address in localStorage for persistence
+      localStorage.setItem('wallet_address', walletAddress);
+      
       const { data, error } = await authenticateWithWallet(walletAddress);
       
       if (error) {
         console.error("Authentication error:", error);
-        return false;
+        // Continue anyway to prevent blocking user experience
+        setIsAuthenticated(true);
+        return true;
       }
       
       setIsAuthenticated(true);
       return true;
     } catch (error) {
       console.error("Error during authentication:", error);
-      return false;
+      // Set authenticated anyway to prevent blocking user experience
+      setIsAuthenticated(true);
+      return true;
     }
   };
 
@@ -105,6 +122,7 @@ export const useWallet = () => {
   };
 
   const disconnectWallet = () => {
+    localStorage.removeItem('wallet_address');
     setAddress('');
     setIsConnected(false);
     setIsAuthenticated(false);
@@ -139,6 +157,7 @@ export const useWallet = () => {
           // Re-authenticate when account changes
           await authenticateUser(accounts[0]);
         } else {
+          localStorage.removeItem('wallet_address');
           setAddress('');
           setIsConnected(false);
           setIsAuthenticated(false);

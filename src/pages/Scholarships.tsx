@@ -1,4 +1,3 @@
-
 import { Header } from "@/components/Header";
 import { ScholarshipCard } from "@/components/ScholarshipCard";
 import { CreateScholarshipForm } from "@/components/CreateScholarshipForm";
@@ -19,6 +18,7 @@ const Scholarships = () => {
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState("");
   const [appliedScholarships, setAppliedScholarships] = useState<string[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
 
   const isGovernment = address && address.toLowerCase() === GOVERNMENT_ADDRESS.toLowerCase();
 
@@ -31,6 +31,7 @@ const Scholarships = () => {
   const fetchApplications = async () => {
     if (!address) return;
     
+    setIsLoading(true);
     try {
       // Fetch all applications by this user
       const { data: applications, error } = await supabase
@@ -46,6 +47,9 @@ const Scholarships = () => {
       
     } catch (error) {
       console.error("Error fetching applications:", error);
+      // Don't show error toast here to avoid overwhelming the user
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -68,6 +72,7 @@ const Scholarships = () => {
       return;
     }
 
+    setIsLoading(true);
     try {
       const { error } = await supabase
         .from('applications')
@@ -76,7 +81,18 @@ const Scholarships = () => {
           applicant_address: address,
         });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes('duplicate key')) {
+          toast({
+            title: "Already applied",
+            description: "You have already applied for this scholarship",
+          });
+          // Add to local state to prevent duplicate applications
+          setAppliedScholarships([...appliedScholarships, scholarshipId]);
+          return;
+        }
+        throw error;
+      }
 
       setAppliedScholarships([...appliedScholarships, scholarshipId]);
       
@@ -88,9 +104,11 @@ const Scholarships = () => {
       console.error("Error applying for scholarship:", error);
       toast({
         title: "Error",
-        description: "Failed to submit application",
+        description: "Failed to submit application. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -119,9 +137,10 @@ const Scholarships = () => {
               <Button 
                 onClick={() => handleApply(scholarship.id)}
                 className="w-full bg-edu-primary hover:bg-edu-primary/90"
+                disabled={isLoading}
               >
                 <Award className="mr-2 h-4 w-4" />
-                Apply for Scholarship
+                {isLoading ? "Submitting..." : "Apply for Scholarship"}
               </Button>
             )
           )}

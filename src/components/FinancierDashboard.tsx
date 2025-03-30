@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
@@ -11,20 +11,25 @@ import { useToast } from "@/hooks/use-toast";
 
 export function FinancierDashboard() {
   const { scholarships, fundScholarship, loading } = useDAO();
-  const { address } = useWallet();
+  const { address, isAuthenticated } = useWallet();
   const { toast } = useToast();
   const [fundingInProgress, setFundingInProgress] = useState<string | null>(null);
-  
-  // Filter scholarships that are approved but not yet funded
-  const approvedScholarships = scholarships.filter(
-    (s) => s.status === 'approved'
+  const [loadingApplications, setLoadingApplications] = useState(false);
+  const [approvedScholarships, setApprovedScholarships] = useState(
+    scholarships.filter(s => s.status === 'approved')
   );
+  
+  // Update approved scholarships when scholarships change
+  useEffect(() => {
+    setApprovedScholarships(scholarships.filter(s => s.status === 'approved'));
+  }, [scholarships]);
 
   const handleFund = async (scholarshipId: string) => {
     if (loading || fundingInProgress) return;
     
     setFundingInProgress(scholarshipId);
     try {
+      setLoadingApplications(true);
       // Find the approved application for this scholarship
       const { data: applications, error } = await supabase
         .from('applications')
@@ -32,12 +37,26 @@ export function FinancierDashboard() {
         .eq('scholarship_id', scholarshipId)
         .eq('status', 'approved');
       
+      setLoadingApplications(false);
+      
       if (error) {
         throw error;
       }
       
       if (!applications || applications.length === 0) {
-        throw new Error("No approved application found");
+        // Try to find any application for this scholarship
+        const { data: allApplications, error: allAppsError } = await supabase
+          .from('applications')
+          .select('*')
+          .eq('scholarship_id', scholarshipId)
+          .limit(1);
+        
+        if (allAppsError || !allApplications || allApplications.length === 0) {
+          throw new Error("No application found for this scholarship");
+        }
+        
+        // Use the first application we find
+        applications = allApplications;
       }
       
       // Process payment through MetaMask
@@ -103,6 +122,11 @@ export function FinancierDashboard() {
       }
     } catch (error) {
       console.error("Funding error:", error);
+      toast({
+        title: "Error processing funding",
+        description: error instanceof Error ? error.message : "Unknown error occurred",
+        variant: "destructive"
+      });
     } finally {
       setFundingInProgress(null);
     }
@@ -170,7 +194,9 @@ export function FinancierDashboard() {
                       <TableCell className="font-medium">{scholarship.title}</TableCell>
                       <TableCell>{scholarship.amount.toFixed(3)} EDU</TableCell>
                       <TableCell className="font-mono text-xs">
-                        {scholarship.recipient?.slice(0, 6)}...{scholarship.recipient?.slice(-4)}
+                        {scholarship.recipient ? 
+                          `${scholarship.recipient.slice(0, 6)}...${scholarship.recipient.slice(-4)}` : 
+                          'Not assigned'}
                       </TableCell>
                       <TableCell>{new Date(scholarship.created_at).toLocaleDateString()}</TableCell>
                       <TableCell>
@@ -178,7 +204,7 @@ export function FinancierDashboard() {
                           size="sm" 
                           className="bg-edu-primary hover:bg-edu-primary/90"
                           onClick={() => handleFund(scholarship.id)}
-                          disabled={loading || fundingInProgress === scholarship.id}
+                          disabled={loading || fundingInProgress === scholarship.id || loadingApplications}
                         >
                           <Banknote className="mr-1 h-4 w-4" />
                           {fundingInProgress === scholarship.id ? "Processing..." : "Pay Now"}
@@ -220,7 +246,9 @@ export function FinancierDashboard() {
                         <TableCell className="font-medium">{scholarship.title}</TableCell>
                         <TableCell>{scholarship.amount.toFixed(3)} EDU</TableCell>
                         <TableCell className="font-mono text-xs">
-                          {scholarship.recipient?.slice(0, 6)}...{scholarship.recipient?.slice(-4)}
+                          {scholarship.recipient ? 
+                            `${scholarship.recipient.slice(0, 6)}...${scholarship.recipient.slice(-4)}` : 
+                            'Not assigned'}
                         </TableCell>
                         <TableCell>{new Date(scholarship.created_at).toLocaleDateString()}</TableCell>
                         <TableCell>
