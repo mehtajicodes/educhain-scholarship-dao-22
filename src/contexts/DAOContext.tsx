@@ -3,7 +3,6 @@ import { ReactNode, createContext, useContext, useState, useEffect } from 'react
 import { useToast } from '@/hooks/use-toast';
 import { Scholarship, DAOContextType } from '@/types/dao';
 import { fetchScholarshipsData } from '@/utils/dao-utils';
-import { supabase } from '@/integrations/supabase/client';
 import { useScholarshipActions } from '@/hooks/use-scholarship-actions';
 
 const DAOContext = createContext<DAOContextType>({
@@ -22,12 +21,20 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
   const [scholarships, setScholarships] = useState<Scholarship[]>([]);
   const [loading, setLoading] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [lastRefresh, setLastRefresh] = useState(0);
 
   const fetchScholarships = async () => {
+    // Don't refresh too frequently
+    const now = Date.now();
+    if (now - lastRefresh < 5000 && scholarships.length > 0) {
+      return;
+    }
+    
     setLoading(true);
     try {
       const transformedScholarships = await fetchScholarshipsData();
       setScholarships(transformedScholarships);
+      setLastRefresh(now);
       
       // Reset error state if successful
       if (hasError) {
@@ -53,12 +60,12 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     fetchScholarships();
     
-    // Set up a refresh interval (every 10 seconds)
+    // Set up a refresh interval (every 30 seconds instead of 10 to reduce API calls)
     const intervalId = setInterval(() => {
       if (!hasError) {
         fetchScholarships();
       }
-    }, 10000);
+    }, 30000);
     
     return () => clearInterval(intervalId);
   }, [hasError]);

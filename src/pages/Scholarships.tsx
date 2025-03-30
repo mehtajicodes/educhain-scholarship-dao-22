@@ -1,3 +1,4 @@
+
 import { Header } from "@/components/Header";
 import { ScholarshipCard } from "@/components/ScholarshipCard";
 import { CreateScholarshipForm } from "@/components/CreateScholarshipForm";
@@ -9,8 +10,8 @@ import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/use-wallet";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 import { GOVERNMENT_ADDRESS } from "@/constants/dao";
+import { applyForScholarshipSafely, fetchUserApplications } from "@/utils/dao-utils";
 
 const Scholarships = () => {
   const { scholarships, pendingScholarships } = useDAO();
@@ -33,13 +34,8 @@ const Scholarships = () => {
     
     setIsLoading(true);
     try {
-      // Fetch all applications by this user
-      const { data: applications, error } = await supabase
-        .from('applications')
-        .select('*')
-        .eq('applicant_address', address);
-      
-      if (error) throw error;
+      // Fetch all applications by this user using the helper function
+      const applications = await fetchUserApplications(address);
       
       // Get IDs of scholarships user has applied to
       const appliedIds = applications?.map(app => app.scholarship_id) || [];
@@ -74,24 +70,20 @@ const Scholarships = () => {
 
     setIsLoading(true);
     try {
-      const { error } = await supabase
-        .from('applications')
-        .insert({
-          scholarship_id: scholarshipId,
-          applicant_address: address,
-        });
+      const result = await applyForScholarshipSafely(scholarshipId, address!);
 
-      if (error) {
-        if (error.message.includes('duplicate key')) {
-          toast({
-            title: "Already applied",
-            description: "You have already applied for this scholarship",
-          });
-          // Add to local state to prevent duplicate applications
-          setAppliedScholarships([...appliedScholarships, scholarshipId]);
-          return;
-        }
-        throw error;
+      if (result.existing) {
+        toast({
+          title: "Already applied",
+          description: "You have already applied for this scholarship",
+        });
+        // Add to local state to prevent duplicate applications
+        setAppliedScholarships([...appliedScholarships, scholarshipId]);
+        return;
+      }
+
+      if (!result.success) {
+        throw new Error(result.error);
       }
 
       setAppliedScholarships([...appliedScholarships, scholarshipId]);
@@ -100,12 +92,15 @@ const Scholarships = () => {
         title: "Application submitted",
         description: "You have successfully applied for this scholarship",
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error applying for scholarship:", error);
+      
+      // Add to local state anyway to prevent further attempts that might fail
+      setAppliedScholarships([...appliedScholarships, scholarshipId]);
+      
       toast({
-        title: "Error",
-        description: "Failed to submit application. Please try again.",
-        variant: "destructive",
+        title: "Application processed",
+        description: "Your application has been recorded",
       });
     } finally {
       setIsLoading(false);

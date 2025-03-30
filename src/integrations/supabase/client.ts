@@ -16,9 +16,18 @@ export const supabase = createClient<Database>(
       persistSession: true,
       autoRefreshToken: true,
       detectSessionInUrl: false,
+      flowType: 'implicit',
     },
     global: {
-      headers: {},
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_PUBLISHABLE_KEY,
+      },
+    },
+    realtime: {
+      params: {
+        eventsPerSecond: 1,
+      },
     },
   }
 );
@@ -41,24 +50,7 @@ export const authenticateWithWallet = async (address: string) => {
       }
     }
     
-    // Get the current session
-    const { data: { session } } = await supabase.auth.getSession();
-    
-    // If we already have a session, return it
-    if (session) {
-      const authData = { 
-        session, 
-        user: { id: address, wallet_address: address } 
-      };
-      localStorage.setItem(WALLET_AUTH_KEY, JSON.stringify({
-        address: address.toLowerCase(),
-        ...authData
-      }));
-      return { data: authData, error: null };
-    }
-    
-    // For anonymous access, we'll just use the address as the identifier
-    // without actually authenticating with Supabase to avoid rate limits
+    // Generate a mock authentication without hitting Supabase to avoid rate limits
     const mockAuthData = {
       user: { id: address, wallet_address: address }
     };
@@ -68,9 +60,10 @@ export const authenticateWithWallet = async (address: string) => {
       ...mockAuthData
     }));
     
+    console.log("Created mock authentication for wallet:", address);
     return { data: mockAuthData, error: null };
   } catch (error) {
-    console.error("Error authenticating with wallet:", error);
+    console.error("Error in authenticateWithWallet:", error);
     // Provide a fallback to continue operation even if auth fails
     return { 
       data: { user: { id: address, wallet_address: address } },
@@ -90,4 +83,43 @@ export const getAuthenticatedWallet = () => {
   } catch (e) {
     return null;
   }
+};
+
+// Create a mock client for fallback when Supabase is unavailable
+export const createMockClient = () => {
+  return {
+    from: (table: string) => ({
+      select: () => ({
+        eq: () => ({
+          eq: () => ({
+            execute: async () => ({ data: [], error: null }),
+          }),
+          execute: async () => ({ data: [], error: null }),
+        }),
+        execute: async () => ({ data: [], error: null }),
+      }),
+      insert: () => ({
+        select: () => ({
+          execute: async () => ({ data: [], error: null }),
+        }),
+        execute: async () => ({ data: [], error: null }),
+      }),
+      update: () => ({
+        eq: () => ({
+          execute: async () => ({ data: [], error: null }),
+        }),
+        execute: async () => ({ data: [], error: null }),
+      }),
+      delete: () => ({
+        eq: () => ({
+          execute: async () => ({ data: [], error: null }),
+        }),
+        execute: async () => ({ data: [], error: null }),
+      }),
+    }),
+    auth: {
+      getSession: async () => ({ data: { session: null }, error: null }),
+      signOut: async () => ({ error: null }),
+    },
+  };
 };

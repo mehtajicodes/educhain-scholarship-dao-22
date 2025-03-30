@@ -1,5 +1,5 @@
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, createMockClient } from '@/integrations/supabase/client';
 import { Scholarship, ScholarshipStatus } from '@/types/dao';
 
 // Mock data to use when Supabase connection fails
@@ -31,14 +31,40 @@ const MOCK_SCHOLARSHIPS = [
     deadline: Date.now() + 15 * 24 * 60 * 60 * 1000,  // 15 days from now
     voters: [],
     applicants: ['0x388175a170a0d8fcb99ff8867c00860fcf95a7cc'],
+  },
+  {
+    id: 'mock-3',
+    title: 'Blockchain Development',
+    description: 'For students interested in blockchain technology',
+    amount: 1.0,
+    creator_address: '0x388C818CA8B9251b393131C08a736A67ccB19297',
+    recipient: '0x388175a170a0d8fcb99ff8867c00860fcf95a7cc',
+    status: 'completed' as ScholarshipStatus,
+    votes: { for: 10, against: 0 },
+    created_at: Date.now() - 60 * 24 * 60 * 60 * 1000, // 60 days ago
+    deadline: Date.now() - 15 * 24 * 60 * 60 * 1000,  // 15 days ago
+    voters: [],
+    applicants: ['0x388175a170a0d8fcb99ff8867c00860fcf95a7cc'],
   }
 ];
 
+// Helper to safely call Supabase with fallback
+const safeSupabaseCall = async (apiFunction: () => Promise<any>, fallbackData: any = null) => {
+  try {
+    return await apiFunction();
+  } catch (error) {
+    console.error("Supabase API call failed:", error);
+    return { data: fallbackData, error };
+  }
+};
+
 export const fetchScholarshipsData = async () => {
   try {
-    const { data: scholarshipsData, error } = await supabase
-      .from('scholarships')
-      .select('*');
+    console.log("Fetching scholarships data...");
+    const { data: scholarshipsData, error } = await safeSupabaseCall(
+      () => supabase.from('scholarships').select('*'),
+      []
+    );
 
     if (error) {
       console.error("Error fetching scholarships:", error);
@@ -54,9 +80,10 @@ export const fetchScholarshipsData = async () => {
     // Try to fetch applications
     let applicationsData = [];
     try {
-      const { data, error: appError } = await supabase
-        .from('applications')
-        .select('*');
+      const { data, error: appError } = await safeSupabaseCall(
+        () => supabase.from('applications').select('*'),
+        []
+      );
       
       if (appError) throw appError;
       applicationsData = data || [];
@@ -68,9 +95,10 @@ export const fetchScholarshipsData = async () => {
     // Try to fetch votes
     let votesData = [];
     try {
-      const { data, error: votesError } = await supabase
-        .from('votes')
-        .select('*');
+      const { data, error: votesError } = await safeSupabaseCall(
+        () => supabase.from('votes').select('*'),
+        []
+      );
       
       if (votesError) throw votesError;
       votesData = data || [];
@@ -117,5 +145,73 @@ export const fetchScholarshipsData = async () => {
   } catch (e) {
     console.error("Error in fetchScholarshipsData:", e);
     return MOCK_SCHOLARSHIPS; // Return mock data on any error
+  }
+};
+
+// Helper function to safely fetch applications
+export const fetchUserApplications = async (address: string) => {
+  if (!address) return [];
+  
+  try {
+    const { data: applications, error } = await safeSupabaseCall(
+      () => supabase
+        .from('applications')
+        .select('*')
+        .eq('applicant_address', address),
+      []
+    );
+    
+    if (error) {
+      console.error("Error fetching applications:", error);
+      return [];
+    }
+    
+    return applications || [];
+  } catch (error) {
+    console.error("Error in fetchUserApplications:", error);
+    return [];
+  }
+};
+
+// Helper function to safely apply for scholarship
+export const applyForScholarshipSafely = async (scholarshipId: string, address: string) => {
+  if (!address || !scholarshipId) {
+    return { success: false, error: "Missing required information" };
+  }
+  
+  try {
+    // Check for existing application first to avoid duplicates
+    const { data: existingApps } = await safeSupabaseCall(
+      () => supabase
+        .from('applications')
+        .select('*')
+        .eq('scholarship_id', scholarshipId)
+        .eq('applicant_address', address),
+      []
+    );
+    
+    if (existingApps && existingApps.length > 0) {
+      return { success: true, error: null, existing: true };
+    }
+    
+    const { error } = await safeSupabaseCall(
+      () => supabase
+        .from('applications')
+        .insert({
+          scholarship_id: scholarshipId,
+          applicant_address: address,
+        }),
+      null
+    );
+    
+    if (error) {
+      console.error("Error applying for scholarship:", error);
+      return { success: false, error: error.message };
+    }
+    
+    return { success: true, error: null };
+  } catch (error: any) {
+    console.error("Error in applyForScholarshipSafely:", error);
+    return { success: false, error: error.message };
   }
 };
