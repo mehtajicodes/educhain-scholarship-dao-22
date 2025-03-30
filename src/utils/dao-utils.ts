@@ -62,7 +62,7 @@ export const fetchScholarshipsData = async () => {
   try {
     console.log("Fetching scholarships data...");
     const { data: scholarshipsData, error } = await safeSupabaseCall(
-      () => supabase.from('scholarships').select('*'),
+      () => supabase.from('scholarships').select('*').execute(),
       []
     );
 
@@ -81,7 +81,7 @@ export const fetchScholarshipsData = async () => {
     let applicationsData = [];
     try {
       const { data, error: appError } = await safeSupabaseCall(
-        () => supabase.from('applications').select('*'),
+        () => supabase.from('applications').select('*').execute(),
         []
       );
       
@@ -96,7 +96,7 @@ export const fetchScholarshipsData = async () => {
     let votesData = [];
     try {
       const { data, error: votesError } = await safeSupabaseCall(
-        () => supabase.from('votes').select('*'),
+        () => supabase.from('votes').select('*').execute(),
         []
       );
       
@@ -157,7 +157,8 @@ export const fetchUserApplications = async (address: string) => {
       () => supabase
         .from('applications')
         .select('*')
-        .eq('applicant_address', address),
+        .eq('applicant_address', address)
+        .execute(),
       []
     );
     
@@ -181,16 +182,20 @@ export const applyForScholarshipSafely = async (scholarshipId: string, address: 
   
   try {
     // Check for existing application first to avoid duplicates
-    const { data: existingApps } = await safeSupabaseCall(
+    const { data: existingApps, error: checkError } = await safeSupabaseCall(
       () => supabase
         .from('applications')
         .select('*')
         .eq('scholarship_id', scholarshipId)
-        .eq('applicant_address', address),
+        .eq('applicant_address', address)
+        .execute(),
       []
     );
     
-    if (existingApps && existingApps.length > 0) {
+    if (checkError) {
+      console.error("Error checking existing applications:", checkError);
+      // If we can't check, assume no existing application and try to create one
+    } else if (existingApps && existingApps.length > 0) {
       return { success: true, error: null, existing: true };
     }
     
@@ -200,7 +205,8 @@ export const applyForScholarshipSafely = async (scholarshipId: string, address: 
         .insert({
           scholarship_id: scholarshipId,
           applicant_address: address,
-        }),
+        })
+        .execute(),
       null
     );
     
