@@ -62,7 +62,7 @@ export const fetchScholarshipsData = async () => {
   try {
     console.log("Fetching scholarships data...");
     const { data: scholarshipsData, error } = await safeSupabaseCall(
-      () => supabase.from('scholarships').select('*').execute(),
+      () => supabase.from('scholarships').select('*'),
       []
     );
 
@@ -81,7 +81,7 @@ export const fetchScholarshipsData = async () => {
     let applicationsData = [];
     try {
       const { data, error: appError } = await safeSupabaseCall(
-        () => supabase.from('applications').select('*').execute(),
+        () => supabase.from('applications').select('*'),
         []
       );
       
@@ -96,7 +96,7 @@ export const fetchScholarshipsData = async () => {
     let votesData = [];
     try {
       const { data, error: votesError } = await safeSupabaseCall(
-        () => supabase.from('votes').select('*').execute(),
+        () => supabase.from('votes').select('*'),
         []
       );
       
@@ -157,8 +157,7 @@ export const fetchUserApplications = async (address: string) => {
       () => supabase
         .from('applications')
         .select('*')
-        .eq('applicant_address', address)
-        .execute(),
+        .eq('applicant_address', address),
       []
     );
     
@@ -187,8 +186,7 @@ export const applyForScholarshipSafely = async (scholarshipId: string, address: 
         .from('applications')
         .select('*')
         .eq('scholarship_id', scholarshipId)
-        .eq('applicant_address', address)
-        .execute(),
+        .eq('applicant_address', address),
       []
     );
     
@@ -205,8 +203,7 @@ export const applyForScholarshipSafely = async (scholarshipId: string, address: 
         .insert({
           scholarship_id: scholarshipId,
           applicant_address: address,
-        })
-        .execute(),
+        }),
       null
     );
     
