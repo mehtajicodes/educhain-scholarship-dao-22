@@ -7,10 +7,12 @@ import { useDAO } from "@/contexts/DAOContext";
 import { Banknote, FileText, Calendar, Check } from "lucide-react";
 import { useWallet } from "@/hooks/use-wallet";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export function FinancierDashboard() {
   const { scholarships, fundScholarship, loading } = useDAO();
   const { address } = useWallet();
+  const { toast } = useToast();
   const [fundingInProgress, setFundingInProgress] = useState<string | null>(null);
   
   // Filter scholarships that are approved but not yet funded
@@ -38,15 +40,65 @@ export function FinancierDashboard() {
         throw new Error("No approved application found");
       }
       
-      // Simulate blockchain transaction with MetaMask
+      // Process payment through MetaMask
       if (window.ethereum) {
-        // In a real implementation, we would send EDU tokens here
-        // For now, we'll just simulate a successful transaction
-        console.log("Simulating a blockchain transaction...");
+        const scholarship = scholarships.find(s => s.id === scholarshipId);
+        if (!scholarship) {
+          throw new Error("Scholarship not found");
+        }
         
-        // Process the scholarship funding
-        await fundScholarship(scholarshipId, applications[0].id);
+        try {
+          // Request accounts access
+          const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+          const fromAddress = accounts[0];
+          
+          // Convert amount to hex (wei)
+          // 0.001 ETH = 1000000000000000 wei (1e15)
+          const amountInWei = `0x${(scholarship.amount * 1e15).toString(16)}`;
+          
+          // Send transaction
+          await window.ethereum.request({
+            method: 'eth_sendTransaction',
+            params: [{
+              from: fromAddress,
+              to: applications[0].applicant_address,
+              value: amountInWei,
+              gas: '0x5208', // 21000 gas
+            }],
+          });
+          
+          toast({
+            title: "Payment successful",
+            description: `${scholarship.amount} EDU sent to student successfully`,
+          });
+          
+          // Update scholarship status
+          await fundScholarship(scholarshipId, applications[0].id);
+          
+        } catch (txError: any) {
+          console.error("Transaction error:", txError);
+          if (txError.code === 4001) {
+            // User rejected transaction
+            toast({
+              title: "Transaction rejected",
+              description: "You rejected the transaction",
+              variant: "destructive",
+            });
+          } else {
+            toast({
+              title: "Transaction failed",
+              description: txError.message || "Failed to send payment",
+              variant: "destructive",
+            });
+          }
+          throw txError;
+        }
       } else {
+        toast({
+          title: "MetaMask not found",
+          description: "Please install MetaMask to process payments",
+          variant: "destructive",
+        });
         throw new Error("MetaMask not installed");
       }
     } catch (error) {
@@ -87,7 +139,7 @@ export function FinancierDashboard() {
             </div>
             <div className="bg-edu-light rounded-md p-3">
               <p className="text-xs text-edu-dark/60">Total Amount</p>
-              <p className="text-xl font-bold text-edu-primary">{totalFunded} EDU</p>
+              <p className="text-xl font-bold text-edu-primary">{totalFunded.toFixed(3)} EDU</p>
             </div>
           </div>
 
@@ -116,7 +168,7 @@ export function FinancierDashboard() {
                   {approvedScholarships.map((scholarship) => (
                     <TableRow key={scholarship.id}>
                       <TableCell className="font-medium">{scholarship.title}</TableCell>
-                      <TableCell>{scholarship.amount} EDU</TableCell>
+                      <TableCell>{scholarship.amount.toFixed(3)} EDU</TableCell>
                       <TableCell className="font-mono text-xs">
                         {scholarship.recipient?.slice(0, 6)}...{scholarship.recipient?.slice(-4)}
                       </TableCell>
@@ -129,7 +181,7 @@ export function FinancierDashboard() {
                           disabled={loading || fundingInProgress === scholarship.id}
                         >
                           <Banknote className="mr-1 h-4 w-4" />
-                          {fundingInProgress === scholarship.id ? "Processing..." : "Fund"}
+                          {fundingInProgress === scholarship.id ? "Processing..." : "Pay Now"}
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -166,7 +218,7 @@ export function FinancierDashboard() {
                     .map((scholarship) => (
                       <TableRow key={scholarship.id}>
                         <TableCell className="font-medium">{scholarship.title}</TableCell>
-                        <TableCell>{scholarship.amount} EDU</TableCell>
+                        <TableCell>{scholarship.amount.toFixed(3)} EDU</TableCell>
                         <TableCell className="font-mono text-xs">
                           {scholarship.recipient?.slice(0, 6)}...{scholarship.recipient?.slice(-4)}
                         </TableCell>

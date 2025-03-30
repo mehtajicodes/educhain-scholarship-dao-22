@@ -11,11 +11,21 @@ import { GovernmentDashboard } from "@/components/GovernmentDashboard";
 import { FinancierDashboard } from "@/components/FinancierDashboard";
 import { StudentDashboard } from "@/components/StudentDashboard";
 import { CreateScholarshipForm } from "@/components/CreateScholarshipForm";
+import { GOVERNMENT_ADDRESS, FINANCIER_ADDRESS } from "@/constants/dao";
 
 const MyDashboard = () => {
-  const { userRole } = useDAO();
+  const { scholarships } = useDAO();
   const { isVerified, userDetails } = useAnonAadhaarContext();
   const { isConnected, address, formatAddress, connectWallet } = useWallet();
+
+  // Determine user role
+  const userRole = !address 
+    ? 'regular'
+    : address.toLowerCase() === GOVERNMENT_ADDRESS.toLowerCase()
+    ? 'government'
+    : address.toLowerCase() === FINANCIER_ADDRESS.toLowerCase()
+    ? 'financier'
+    : 'student';
 
   // Render the appropriate dashboard based on the user's role
   const renderDashboard = () => {
@@ -40,7 +50,7 @@ const MyDashboard = () => {
                   <div>
                     <p className="font-medium">Limited Access</p>
                     <p className="mt-1 text-sm">
-                      Regular users have limited functionality. You can browse and vote on scholarships, but can't create or apply for them.
+                      Regular users can browse and apply for scholarships. Only government officers can create scholarships.
                     </p>
                   </div>
                 </div>
@@ -113,16 +123,14 @@ const MyDashboard = () => {
                 </div>
                 <p className="text-sm text-gray-500 mt-1">
                   {userRole === 'government' 
-                    ? 'You can review and approve scholarship applications' 
+                    ? 'You can review and approve scholarship applications and create new scholarships' 
                     : userRole === 'financier' 
                       ? 'You can fund approved scholarships' 
                       : 'Apply for scholarships and track your applications'}
                 </p>
               </div>
               
-              {userRole === 'student' && (
-                <CreateScholarshipForm />
-              )}
+              {userRole === 'government' && <CreateScholarshipForm />}
             </div>
             
             {renderDashboard()}

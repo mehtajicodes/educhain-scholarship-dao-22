@@ -16,19 +16,34 @@ import { Textarea } from "@/components/ui/textarea";
 import { useDAO } from "@/contexts/DAOContext";
 import { useToast } from "@/hooks/use-toast";
 import { Shield, Plus } from "lucide-react";
+import { useWallet } from "@/hooks/use-wallet";
+import { GOVERNMENT_ADDRESS } from "@/constants/dao";
 
 export function CreateScholarshipForm() {
   const [open, setOpen] = useState(false);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [amount, setAmount] = useState("");
+  const [amount, setAmount] = useState("0.001");
   const [durationDays, setDurationDays] = useState("30");
   
   const { createScholarship, loading } = useDAO();
   const { toast } = useToast();
+  const { address } = useWallet();
+
+  // Check if the current user is a government address
+  const isGovernment = address && address.toLowerCase() === GOVERNMENT_ADDRESS.toLowerCase();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!isGovernment) {
+      toast({
+        title: "Permission denied",
+        description: "Only government officers can create scholarships",
+        variant: "destructive",
+      });
+      return;
+    }
     
     if (!title || !description || !amount || !durationDays) {
       toast({
@@ -66,13 +81,18 @@ export function CreateScholarshipForm() {
       await createScholarship(title, description, amountValue, deadline);
       setTitle("");
       setDescription("");
-      setAmount("");
+      setAmount("0.001");
       setDurationDays("30");
       setOpen(false);
     } catch (error) {
       console.error("Error creating scholarship:", error);
     }
   };
+
+  // If not a government address, don't render the button
+  if (!isGovernment) {
+    return null;
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -122,9 +142,9 @@ export function CreateScholarshipForm() {
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  placeholder="1000"
-                  min="0"
-                  step="100"
+                  placeholder="0.001"
+                  min="0.001"
+                  step="0.001"
                 />
               </div>
               
