@@ -1,4 +1,3 @@
-
 import { ReactNode, createContext, useContext, useState, useEffect } from 'react';
 import { useWallet } from '@/hooks/use-wallet';
 import { useToast } from '@/hooks/use-toast';
@@ -38,7 +37,6 @@ type DAOContextType = {
   userRole: UserRole;
 };
 
-// Fixed addresses for special roles
 const GOVERNMENT_ADDRESS = '0x303C226B1b66F07717D35f5E7243028950Eb1ff1';
 const FINANCIER_ADDRESS = '0x388175A170A0D8fCB99FF8867C00860fCF95A7Cc';
 
@@ -63,7 +61,6 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
   const [scholarships, setScholarships] = useState<Scholarship[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Determine user role based on address
   const userRole: UserRole = !address 
     ? 'regular'
     : address.toLowerCase() === GOVERNMENT_ADDRESS.toLowerCase()
@@ -72,7 +69,6 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
     ? 'financier'
     : 'student';
 
-  // Load scholarships from Supabase
   useEffect(() => {
     fetchScholarships();
   }, []);
@@ -80,28 +76,24 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
   const fetchScholarships = async () => {
     setLoading(true);
     try {
-      // Fetch scholarships from Supabase
       const { data: scholarshipsData, error } = await supabase
         .from('scholarships')
         .select('*');
 
       if (error) throw error;
 
-      // Fetch applications for each scholarship
       const { data: applicationsData, error: applicationsError } = await supabase
         .from('applications')
         .select('*');
 
       if (applicationsError) throw applicationsError;
 
-      // Fetch votes for each scholarship
       const { data: votesData, error: votesError } = await supabase
         .from('votes')
         .select('*');
 
       if (votesError) throw votesError;
 
-      // Transform data to match our Scholarship type
       const transformedScholarships: Scholarship[] = scholarshipsData.map((scholarship) => {
         const scholarshipApplications = applicationsData?.filter(
           (app) => app.scholarship_id === scholarship.id
@@ -149,12 +141,10 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  // Filter scholarships relevant to the current user
   const myScholarships = scholarships.filter(
     (s) => s.creator_address === address || s.recipient === address || s.applicants.includes(address || '')
   );
 
-  // Filter pending scholarships that haven't reached deadline
   const pendingScholarships = scholarships.filter(
     (s) => s.status === 'pending' && s.deadline > Date.now()
   );
@@ -185,14 +175,12 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
 
     setLoading(true);
     try {
-      // Insert new scholarship into Supabase
-      // FIX: Convert the amount to string for Supabase
       const { data, error } = await supabase
         .from('scholarships')
         .insert({
           title,
           description,
-          amount: amount.toString(), // Fix: Convert number to string
+          amount: amount.toString(),
           creator_address: address,
           deadline: new Date(deadline).toISOString(),
         })
@@ -205,7 +193,6 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
         description: "Your scholarship proposal has been submitted",
       });
 
-      // Refresh scholarships
       fetchScholarships();
     } catch (error) {
       console.error("Error creating scholarship:", error);
@@ -231,7 +218,6 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
 
     setLoading(true);
     try {
-      // Check if user has already voted
       const { data: existingVote, error: checkError } = await supabase
         .from('votes')
         .select('*')
@@ -249,8 +235,6 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      // FIX: Single object rather than array with type issues
-      // Insert vote into Supabase
       const { error } = await supabase
         .from('votes')
         .insert({
@@ -261,7 +245,6 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) throw error;
 
-      // Update scholarship vote count
       const scholarshipToUpdate = scholarships.find(s => s.id === id);
       if (scholarshipToUpdate) {
         const votesFor = voteFor ? scholarshipToUpdate.votes.for + 1 : scholarshipToUpdate.votes.for;
@@ -283,7 +266,6 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
         description: `You voted ${voteFor ? "for" : "against"} the scholarship`,
       });
 
-      // Refresh scholarships
       fetchScholarships();
     } catch (error) {
       console.error("Error voting on scholarship:", error);
@@ -309,7 +291,6 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
 
     setLoading(true);
     try {
-      // Check if already applied
       const { data: existingApplication, error: checkError } = await supabase
         .from('applications')
         .select('*')
@@ -327,7 +308,6 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      // Insert application into Supabase
       const { error } = await supabase
         .from('applications')
         .insert({
@@ -342,7 +322,6 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
         description: "You have applied for this scholarship",
       });
 
-      // Refresh scholarships
       fetchScholarships();
     } catch (error) {
       console.error("Error applying for scholarship:", error);
@@ -368,7 +347,6 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
 
     setLoading(true);
     try {
-      // Find the application to approve
       const { data: applications, error: appError } = await supabase
         .from('applications')
         .select('*')
@@ -386,7 +364,6 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      // Update application status
       const { error: updateAppError } = await supabase
         .from('applications')
         .update({ status: 'approved' })
@@ -394,7 +371,6 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
 
       if (updateAppError) throw updateAppError;
 
-      // Update scholarship status
       const { error: updateScholarshipError } = await supabase
         .from('scholarships')
         .update({ status: 'approved' })
@@ -407,7 +383,6 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
         description: "The scholarship has been approved",
       });
 
-      // Refresh scholarships
       fetchScholarships();
     } catch (error) {
       console.error("Error approving scholarship:", error);
@@ -433,7 +408,6 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
 
     setLoading(true);
     try {
-      // Find the approved application
       const { data: applications, error: appError } = await supabase
         .from('applications')
         .select('*')
@@ -451,7 +425,6 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      // Find the scholarship
       const { data: scholarshipData, error: scholarshipError } = await supabase
         .from('scholarships')
         .select('*')
@@ -469,7 +442,6 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
-      // Create transaction record
       const { error: transactionError } = await supabase
         .from('transactions')
         .insert({
@@ -482,10 +454,6 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
 
       if (transactionError) throw transactionError;
 
-      // Call MetaMask to make payment (this would be implemented with actual blockchain integration)
-      // For now, we'll simulate the transaction succeeding
-
-      // Update scholarship status to completed
       const { error: updateError } = await supabase
         .from('scholarships')
         .update({ status: 'completed' })
@@ -498,7 +466,6 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
         description: "The scholarship has been funded and completed",
       });
 
-      // Refresh scholarships
       fetchScholarships();
     } catch (error) {
       console.error("Error funding scholarship:", error);
