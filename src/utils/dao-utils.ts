@@ -1,4 +1,5 @@
-import { supabase, createMockClient } from '@/integrations/supabase/client';
+
+import { supabase, createMockClient, getSupabaseClient } from '@/integrations/supabase/client';
 import { Scholarship, ScholarshipStatus } from '@/types/dao';
 
 // Mock data to use when Supabase connection fails
@@ -60,8 +61,11 @@ const safeSupabaseCall = async <T>(apiFunction: () => Promise<{ data: T | null; 
 export const fetchScholarshipsData = async () => {
   try {
     console.log("Fetching scholarships data...");
+    // Use getSupabaseClient() to automatically get the appropriate client
+    const client = getSupabaseClient();
+    
     const { data: scholarshipsData, error } = await safeSupabaseCall(
-      async () => await supabase.from('scholarships').select('*'),
+      async () => await client.from('scholarships').select('*'),
       []
     );
 
@@ -80,7 +84,7 @@ export const fetchScholarshipsData = async () => {
     let applicationsData = [];
     try {
       const { data, error: appError } = await safeSupabaseCall(
-        async () => await supabase.from('applications').select('*'),
+        async () => await client.from('applications').select('*'),
         []
       );
       
@@ -95,7 +99,7 @@ export const fetchScholarshipsData = async () => {
     let votesData = [];
     try {
       const { data, error: votesError } = await safeSupabaseCall(
-        async () => await supabase.from('votes').select('*'),
+        async () => await client.from('votes').select('*'),
         []
       );
       
@@ -152,8 +156,9 @@ export const fetchUserApplications = async (address: string) => {
   if (!address) return [];
   
   try {
+    const client = getSupabaseClient();
     const { data: applications, error } = await safeSupabaseCall(
-      async () => await supabase
+      async () => await client
         .from('applications')
         .select('*')
         .eq('applicant_address', address),
@@ -179,9 +184,10 @@ export const applyForScholarshipSafely = async (scholarshipId: string, address: 
   }
   
   try {
+    const client = getSupabaseClient();
     // Check for existing application first to avoid duplicates
     const { data: existingApps, error: checkError } = await safeSupabaseCall(
-      async () => await supabase
+      async () => await client
         .from('applications')
         .select('*')
         .eq('scholarship_id', scholarshipId)
@@ -197,7 +203,7 @@ export const applyForScholarshipSafely = async (scholarshipId: string, address: 
     }
     
     const { error } = await safeSupabaseCall(
-      async () => await supabase
+      async () => await client
         .from('applications')
         .insert({
           scholarship_id: scholarshipId,

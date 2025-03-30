@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useDAO } from "@/contexts/DAOContext";
 import { Scholarship } from "@/types/dao";
 import { Award, Check, Users, FileText } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { getSupabaseClient } from "@/integrations/supabase/client";
 
 export function GovernmentDashboard() {
   const { scholarships, approveScholarship, loading } = useDAO();
@@ -26,8 +26,9 @@ export function GovernmentDashboard() {
     }
 
     try {
+      const client = getSupabaseClient();
       // Fetch applications for this scholarship
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('applications')
         .select('*')
         .eq('scholarship_id', scholarshipId)

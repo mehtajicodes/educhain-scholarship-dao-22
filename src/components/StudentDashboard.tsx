@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Check, FileText, Award } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWallet } from "@/hooks/use-wallet";
-import { supabase } from "@/integrations/supabase/client";
+import { getSupabaseClient } from "@/integrations/supabase/client";
 
 export function StudentDashboard() {
   const { address } = useWallet();
@@ -25,8 +25,9 @@ export function StudentDashboard() {
     if (!address) return;
     
     try {
+      const client = getSupabaseClient();
       // Fetch all applications by this user
-      const { data: applications, error } = await supabase
+      const { data: applications, error } = await client
         .from('applications')
         .select('*')
         .eq('applicant_address', address);

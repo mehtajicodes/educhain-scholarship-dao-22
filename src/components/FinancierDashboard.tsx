@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
@@ -5,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useDAO } from "@/contexts/DAOContext";
 import { Banknote, FileText, Calendar, Check } from "lucide-react";
 import { useWallet } from "@/hooks/use-wallet";
-import { supabase } from "@/integrations/supabase/client";
+import { getSupabaseClient } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 export function FinancierDashboard() {
@@ -30,7 +31,8 @@ export function FinancierDashboard() {
     try {
       setLoadingApplications(true);
       // Find the approved application for this scholarship
-      const { data: applications, error } = await supabase
+      const client = getSupabaseClient();
+      const { data: applications, error } = await client
         .from('applications')
         .select('*')
         .eq('scholarship_id', scholarshipId)
@@ -47,7 +49,7 @@ export function FinancierDashboard() {
       
       if (!applicationsToUse || applicationsToUse.length === 0) {
         // Try to find any application for this scholarship
-        const { data: allApplications, error: allAppsError } = await supabase
+        const { data: allApplications, error: allAppsError } = await client
           .from('applications')
           .select('*')
           .eq('scholarship_id', scholarshipId)
