@@ -91,30 +91,31 @@ export const createMockClient = () => {
     from: (table: string) => ({
       select: () => ({
         eq: () => ({
-          eq: () => ({
-            execute: async () => ({ data: [], error: null }),
-          }),
-          execute: async () => ({ data: [], error: null }),
+          eq: () => Promise.resolve({ data: [], error: null }),
+          single: () => Promise.resolve({ data: null, error: null }),
+          order: () => Promise.resolve({ data: [], error: null }),
+          limit: () => Promise.resolve({ data: [], error: null }),
         }),
-        execute: async () => ({ data: [], error: null }),
-      }),
-      insert: () => ({
-        select: () => ({
-          execute: async () => ({ data: [], error: null }),
+        single: () => Promise.resolve({ data: null, error: null }),
+        order: () => ({
+          limit: () => Promise.resolve({ data: [], error: null }),
         }),
-        execute: async () => ({ data: [], error: null }),
-      }),
-      update: () => ({
+        limit: () => Promise.resolve({ data: [], error: null }),
         eq: () => ({
-          execute: async () => ({ data: [], error: null }),
+          eq: () => Promise.resolve({ data: [], error: null }),
+          single: () => Promise.resolve({ data: null, error: null }),
+          order: () => Promise.resolve({ data: [], error: null }),
+          limit: () => Promise.resolve({ data: [], error: null }),
         }),
-        execute: async () => ({ data: [], error: null }),
+      }),
+      insert: (values: any) => Promise.resolve({ data: values, error: null }),
+      update: (values: any) => ({
+        eq: () => Promise.resolve({ data: values, error: null }),
+        match: () => Promise.resolve({ data: values, error: null }),
       }),
       delete: () => ({
-        eq: () => ({
-          execute: async () => ({ data: [], error: null }),
-        }),
-        execute: async () => ({ data: [], error: null }),
+        eq: () => Promise.resolve({ data: [], error: null }),
+        match: () => Promise.resolve({ data: [], error: null }),
       }),
     }),
     auth: {
