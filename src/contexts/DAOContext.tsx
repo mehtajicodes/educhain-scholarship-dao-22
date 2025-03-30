@@ -1,28 +1,20 @@
 
 import { ReactNode, createContext, useContext, useState, useEffect } from 'react';
-import { useWallet } from '@/hooks/use-wallet';
 import { useToast } from '@/hooks/use-toast';
-import { Scholarship, DAOContextType, UserRole } from '@/types/dao';
+import { Scholarship, DAOContextType } from '@/types/dao';
 import { fetchScholarshipsData } from '@/utils/dao-utils';
-import { useScholarshipActions } from '@/hooks/use-scholarship-actions';
+import { supabase } from '@/integrations/supabase/client';
 
 const DAOContext = createContext<DAOContextType>({
   scholarships: [],
   createScholarship: async () => {},
-  voteOnScholarship: async () => {},
-  applyForScholarship: async () => {},
-  approveScholarship: async () => {},
-  fundScholarship: async () => {},
-  myScholarships: [],
   pendingScholarships: [],
   loading: false,
-  userRole: 'regular',
 });
 
 export const useDAO = () => useContext(DAOContext);
 
 export const DAOProvider = ({ children }: { children: ReactNode }) => {
-  const { address } = useWallet();
   const { toast } = useToast();
   const [scholarships, setScholarships] = useState<Scholarship[]>([]);
   const [loading, setLoading] = useState(false);
@@ -48,19 +40,43 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
     fetchScholarships();
   }, []);
 
-  const {
-    createScholarship,
-    voteOnScholarship,
-    applyForScholarship,
-    approveScholarship,
-    fundScholarship,
-    loading: actionsLoading,
-    userRole
-  } = useScholarshipActions(scholarships, fetchScholarships);
+  const createScholarship = async (
+    title: string,
+    description: string,
+    amount: number,
+    deadline: number
+  ) => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('scholarships')
+        .insert({
+          title,
+          description,
+          amount,
+          creator_address: "0x303C226B1b66F07717D35f5E7243028950Eb1ff1", // Default to government address
+          deadline: new Date(deadline).toISOString(),
+        });
 
-  const myScholarships = scholarships.filter(
-    (s) => s.creator_address === address || s.recipient === address || s.applicants.includes(address || '')
-  );
+      if (error) throw error;
+
+      toast({
+        title: "Scholarship created",
+        description: "Your scholarship proposal has been submitted",
+      });
+
+      fetchScholarships();
+    } catch (error) {
+      console.error("Error creating scholarship:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create scholarship",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const pendingScholarships = scholarships.filter(
     (s) => s.status === 'pending' && s.deadline > Date.now()
@@ -71,14 +87,8 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
       value={{
         scholarships,
         createScholarship,
-        voteOnScholarship,
-        applyForScholarship,
-        approveScholarship,
-        fundScholarship,
-        myScholarships,
         pendingScholarships,
-        loading: loading || actionsLoading,
-        userRole,
+        loading,
       }}
     >
       {children}

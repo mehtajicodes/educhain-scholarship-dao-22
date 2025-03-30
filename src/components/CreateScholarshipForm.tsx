@@ -15,9 +15,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useDAO } from "@/contexts/DAOContext";
 import { useToast } from "@/hooks/use-toast";
-import { useAnonAadhaarContext } from "@/contexts/AnonAadhaarContext";
-import { useWallet } from "@/hooks/use-wallet";
-import { Plus, Shield } from "lucide-react";
+import { Shield, Plus } from "lucide-react";
 
 export function CreateScholarshipForm() {
   const [open, setOpen] = useState(false);
@@ -26,10 +24,8 @@ export function CreateScholarshipForm() {
   const [amount, setAmount] = useState("");
   const [durationDays, setDurationDays] = useState("30");
   
-  const { createScholarship, loading, userRole } = useDAO();
+  const { createScholarship, loading } = useDAO();
   const { toast } = useToast();
-  const { isVerified } = useAnonAadhaarContext();
-  const { isConnected } = useWallet();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,7 +79,6 @@ export function CreateScholarshipForm() {
       <DialogTrigger asChild>
         <Button 
           className="bg-edu-primary hover:bg-edu-primary/90"
-          disabled={!isConnected || (userRole === 'student' && !isVerified) || userRole !== 'government'}
         >
           <Plus className="mr-2 h-4 w-4" />
           Create Scholarship
@@ -93,7 +88,7 @@ export function CreateScholarshipForm() {
         <DialogHeader>
           <DialogTitle>Create New Scholarship</DialogTitle>
           <DialogDescription>
-            Fill in the details for your new scholarship proposal. The community will vote on your proposal.
+            Fill in the details for your new scholarship proposal.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
@@ -152,7 +147,7 @@ export function CreateScholarshipForm() {
               <div>
                 <p className="font-medium">Important</p>
                 <p>
-                  This will create an on-chain proposal that cannot be modified once submitted.
+                  This will create a scholarship proposal that cannot be modified once submitted.
                   Make sure all details are correct.
                 </p>
               </div>

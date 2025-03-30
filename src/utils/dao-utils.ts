@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { Scholarship } from '@/types/dao';
+import { Scholarship, ScholarshipStatus } from '@/types/dao';
 
 export const fetchScholarshipsData = async () => {
   const { data: scholarshipsData, error } = await supabase
@@ -43,7 +43,7 @@ export const fetchScholarshipsData = async () => {
       amount: Number(scholarship.amount),
       creator_address: scholarship.creator_address,
       recipient: scholarshipApplications.find(app => app.status === 'approved')?.applicant_address,
-      status: scholarship.status,
+      status: scholarship.status as ScholarshipStatus,
       votes: {
         for: votesFor,
         against: votesAgainst,
