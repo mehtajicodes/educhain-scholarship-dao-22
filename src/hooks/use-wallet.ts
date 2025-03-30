@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { supabase, authenticateWithWallet } from '@/integrations/supabase/client';
+import { supabase, authenticateWithWallet, getAuthenticatedWallet } from '@/integrations/supabase/client';
 
 interface MetaMaskError {
   code: number;
@@ -68,7 +68,8 @@ export const useWallet = () => {
       // Store the address in localStorage for persistence
       localStorage.setItem('wallet_address', walletAddress);
       
-      const { data, error } = await authenticateWithWallet(walletAddress);
+      // Use our improved authentication method
+      const { error } = await authenticateWithWallet(walletAddress);
       
       if (error) {
         console.error("Authentication error:", error);
@@ -123,6 +124,7 @@ export const useWallet = () => {
 
   const disconnectWallet = () => {
     localStorage.removeItem('wallet_address');
+    localStorage.removeItem('wallet_auth_status');
     setAddress('');
     setIsConnected(false);
     setIsAuthenticated(false);
@@ -158,6 +160,7 @@ export const useWallet = () => {
           await authenticateUser(accounts[0]);
         } else {
           localStorage.removeItem('wallet_address');
+          localStorage.removeItem('wallet_auth_status');
           setAddress('');
           setIsConnected(false);
           setIsAuthenticated(false);

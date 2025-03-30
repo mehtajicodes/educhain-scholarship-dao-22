@@ -21,19 +21,30 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
   const [scholarships, setScholarships] = useState<Scholarship[]>([]);
   const [loading, setLoading] = useState(false);
+  const [hasError, setHasError] = useState(false);
 
   const fetchScholarships = async () => {
     setLoading(true);
     try {
       const transformedScholarships = await fetchScholarshipsData();
       setScholarships(transformedScholarships);
+      
+      // Reset error state if successful
+      if (hasError) {
+        setHasError(false);
+      }
     } catch (error) {
       console.error("Error fetching data:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load scholarships",
-        variant: "destructive",
-      });
+      setHasError(true);
+      
+      if (!scholarships.length) {
+        // Only show toast when we have no data to display
+        toast({
+          title: "Connection issue",
+          description: "Using demo data for now. Connect your wallet to continue.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -41,7 +52,16 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     fetchScholarships();
-  }, []);
+    
+    // Set up a refresh interval (every 10 seconds)
+    const intervalId = setInterval(() => {
+      if (!hasError) {
+        fetchScholarships();
+      }
+    }, 10000);
+    
+    return () => clearInterval(intervalId);
+  }, [hasError]);
 
   // Import the scholarship actions from the hook
   const { 
