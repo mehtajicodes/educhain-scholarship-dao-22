@@ -1,3 +1,4 @@
+
 import { ReactNode, createContext, useContext, useState, useEffect } from 'react';
 import { useWallet } from '@/hooks/use-wallet';
 import { useToast } from '@/hooks/use-toast';
@@ -23,6 +24,20 @@ export type Scholarship = {
   voters: string[];
   applicants: string[];
 };
+
+// Define the DAOContextType interface
+interface DAOContextType {
+  scholarships: Scholarship[];
+  createScholarship: (title: string, description: string, amount: number, deadline: number) => Promise<void>;
+  voteOnScholarship: (id: string, voteFor: boolean) => Promise<void>;
+  applyForScholarship: (id: string) => Promise<void>;
+  approveScholarship: (id: string, recipientAddress: string) => Promise<void>;
+  fundScholarship: (id: string, applicationId: string) => Promise<void>;
+  myScholarships: Scholarship[];
+  pendingScholarships: Scholarship[];
+  loading: boolean;
+  userRole: UserRole;
+}
 
 const GOVERNMENT_ADDRESS = '0x303C226B1b66F07717D35f5E7243028950Eb1ff1';
 const FINANCIER_ADDRESS = '0x388175A170A0D8fCB99FF8867C00860fCF95A7Cc';
