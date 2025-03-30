@@ -1,3 +1,4 @@
+
 import { ReactNode, createContext, useContext, useState, useEffect } from 'react';
 import { useWallet } from '@/hooks/use-wallet';
 import { useToast } from '@/hooks/use-toast';
@@ -113,7 +114,7 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
           id: scholarship.id,
           title: scholarship.title,
           description: scholarship.description,
-          amount: parseFloat(scholarship.amount),
+          amount: Number(scholarship.amount), // Convert to number to ensure type consistency
           creator_address: scholarship.creator_address,
           recipient: scholarshipApplications.find(app => app.status === 'approved')?.applicant_address,
           status: scholarship.status as ScholarshipStatus,
@@ -180,7 +181,7 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
         .insert({
           title,
           description,
-          amount: amount.toString(),
+          amount, // Pass as number, Supabase will handle the conversion to numeric type
           creator_address: address,
           deadline: new Date(deadline).toISOString(),
         })
