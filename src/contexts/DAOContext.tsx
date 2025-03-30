@@ -1,3 +1,4 @@
+
 import { ReactNode, createContext, useContext, useState, useEffect } from 'react';
 import { useWallet } from '@/hooks/use-wallet';
 import { useToast } from '@/hooks/use-toast';
@@ -185,12 +186,13 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
     setLoading(true);
     try {
       // Insert new scholarship into Supabase
+      // FIX: Convert the amount to string for Supabase
       const { data, error } = await supabase
         .from('scholarships')
         .insert({
           title,
           description,
-          amount: amount.toString(), // Convert number to string for the Supabase insert
+          amount: amount.toString(), // Fix: Convert number to string
           creator_address: address,
           deadline: new Date(deadline).toISOString(),
         })
@@ -247,16 +249,15 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
 
+      // FIX: Single object rather than array with type issues
       // Insert vote into Supabase
       const { error } = await supabase
         .from('votes')
-        .insert([
-          {
-            scholarship_id: id,
-            voter_address: address,
-            vote_type: voteFor,
-          }
-        ]);
+        .insert({
+          scholarship_id: id,
+          voter_address: address,
+          vote_type: voteFor,
+        });
 
       if (error) throw error;
 
@@ -329,12 +330,10 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
       // Insert application into Supabase
       const { error } = await supabase
         .from('applications')
-        .insert([
-          {
-            scholarship_id: id,
-            applicant_address: address,
-          }
-        ]);
+        .insert({
+          scholarship_id: id,
+          applicant_address: address,
+        });
 
       if (error) throw error;
 
@@ -473,15 +472,13 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
       // Create transaction record
       const { error: transactionError } = await supabase
         .from('transactions')
-        .insert([
-          {
-            scholarship_id: id,
-            application_id: applicationId,
-            financier_address: address,
-            recipient_address: applications[0].applicant_address,
-            amount: scholarshipData[0].amount,
-          }
-        ]);
+        .insert({
+          scholarship_id: id,
+          application_id: applicationId,
+          financier_address: address,
+          recipient_address: applications[0].applicant_address,
+          amount: scholarshipData[0].amount,
+        });
 
       if (transactionError) throw transactionError;
 
