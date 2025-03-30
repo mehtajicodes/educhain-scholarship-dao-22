@@ -4,12 +4,15 @@ import { useToast } from '@/hooks/use-toast';
 import { Scholarship, DAOContextType } from '@/types/dao';
 import { fetchScholarshipsData } from '@/utils/dao-utils';
 import { supabase } from '@/integrations/supabase/client';
+import { useScholarshipActions } from '@/hooks/use-scholarship-actions';
 
 const DAOContext = createContext<DAOContextType>({
   scholarships: [],
   createScholarship: async () => {},
   pendingScholarships: [],
   loading: false,
+  approveScholarship: async () => {},
+  fundScholarship: async () => {},
 });
 
 export const useDAO = () => useContext(DAOContext);
@@ -40,47 +43,38 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
     fetchScholarships();
   }, []);
 
+  // Import the scholarship actions from the hook
+  const { 
+    createScholarship: createScholarshipAction, 
+    approveScholarship: approveScholarshipAction,
+    fundScholarship: fundScholarshipAction,
+    loading: actionsLoading 
+  } = useScholarshipActions(scholarships, fetchScholarships);
+
+  // Wrap the imported actions
   const createScholarship = async (
     title: string,
     description: string,
     amount: number,
     deadline: number
   ) => {
-    setLoading(true);
-    try {
-      const { error } = await supabase
-        .from('scholarships')
-        .insert({
-          title,
-          description,
-          amount,
-          creator_address: "0x303C226B1b66F07717D35f5E7243028950Eb1ff1", // Default to government address
-          deadline: new Date(deadline).toISOString(),
-        });
+    await createScholarshipAction(title, description, amount, deadline);
+  };
 
-      if (error) throw error;
+  const approveScholarship = async (id: string, recipientAddress: string) => {
+    await approveScholarshipAction(id, recipientAddress);
+  };
 
-      toast({
-        title: "Scholarship created",
-        description: "Your scholarship proposal has been submitted",
-      });
-
-      fetchScholarships();
-    } catch (error) {
-      console.error("Error creating scholarship:", error);
-      toast({
-        title: "Error",
-        description: "Failed to create scholarship",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+  const fundScholarship = async (id: string, applicationId: string) => {
+    await fundScholarshipAction(id, applicationId);
   };
 
   const pendingScholarships = scholarships.filter(
     (s) => s.status === 'pending' && s.deadline > Date.now()
   );
+
+  // Use the combined loading state
+  const isLoading = loading || actionsLoading;
 
   return (
     <DAOContext.Provider
@@ -88,7 +82,9 @@ export const DAOProvider = ({ children }: { children: ReactNode }) => {
         scholarships,
         createScholarship,
         pendingScholarships,
-        loading,
+        loading: isLoading,
+        approveScholarship,
+        fundScholarship,
       }}
     >
       {children}

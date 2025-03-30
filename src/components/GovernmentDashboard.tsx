@@ -3,7 +3,8 @@ import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { useDAO, Scholarship } from "@/contexts/DAOContext";
+import { useDAO } from "@/contexts/DAOContext";
+import { Scholarship } from "@/types/dao";
 import { Award, Check, Users, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
