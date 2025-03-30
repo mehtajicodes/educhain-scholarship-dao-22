@@ -6,7 +6,7 @@ interface MetaMaskError {
   message: string;
 }
 
-const EDUCHAIN_CHAIN_ID = '0xa0348';  // '656476' in decimal is '0xa0348' in hex
+const EDUCHAIN_CHAIN_ID = '656476';  // '656476' in decimal is '0xa0348' in hex
 const EDUCHAIN_CONFIG = {
   chainId: EDUCHAIN_CHAIN_ID,
   chainName: 'EDU Chain Testnet',
