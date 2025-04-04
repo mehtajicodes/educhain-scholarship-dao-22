@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -21,6 +22,7 @@ import { useWallet } from "@/hooks/use-wallet";
 import { getSupabaseClient } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ethers } from "ethers";
+import { executeQuery } from "@/utils/supabase-client";
 
 export function FinancierDashboard() {
   const { scholarships, fundScholarship, loading } = useDAO();
@@ -46,10 +48,10 @@ export function FinancierDashboard() {
     const client = getSupabaseClient();
 
     try {
-      let applications;
+      let applications: any[] = [];
       try {
-        const applicationsQuery = client.from('applications').select('*');
-        const { data, error } = await applicationsQuery;
+        // Use executeQuery instead of direct Supabase query to fix the type issues
+        const { data, error } = await executeQuery(client, 'applications');
         
         if (error) {
           console.error("Error fetching applications:", error);
@@ -65,14 +67,14 @@ export function FinancierDashboard() {
       setLoadingApplications(false);
 
       const approvedApplications = applications.filter(
-        app => app.scholarship_id === scholarshipId && app.status === 'approved'
+        (app: any) => app.scholarship_id === scholarshipId && app.status === 'approved'
       );
 
       let applicationsToUse = approvedApplications;
 
       if (!applicationsToUse || applicationsToUse.length === 0) {
         const anyApplications = applications.filter(
-          app => app.scholarship_id === scholarshipId
+          (app: any) => app.scholarship_id === scholarshipId
         );
 
         if (!anyApplications || anyApplications.length === 0) {
