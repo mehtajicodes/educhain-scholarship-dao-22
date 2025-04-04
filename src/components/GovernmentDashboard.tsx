@@ -7,6 +7,7 @@ import { useDAO } from "@/contexts/DAOContext";
 import { Scholarship } from "@/types/dao";
 import { Award, Check, Users, FileText } from "lucide-react";
 import { getSupabaseClient } from "@/integrations/supabase/client";
+import { executeQuery } from "@/utils/supabase-client";
 
 export function GovernmentDashboard() {
   const { scholarships, approveScholarship, loading } = useDAO();
@@ -29,19 +30,18 @@ export function GovernmentDashboard() {
       const client = getSupabaseClient();
       
       try {
-        // Fix: Create a query object first, then await the response
-        const query = client.from('applications').select('*');
-        const response = await query;
+        // Use executeQuery helper to avoid chaining issues
+        const { data, error } = await executeQuery(client, 'applications');
         
-        if (response.error) {
-          console.error("Error fetching applications:", response.error);
+        if (error) {
+          console.error("Error fetching applications:", error);
           setApplicationsData([]);
           return;
         }
 
         // Filter applications for this scholarship with status pending
-        const filteredApplications = (response.data || []).filter(
-          app => app.scholarship_id === scholarshipId && app.status === 'pending'
+        const filteredApplications = (data || []).filter(
+          (app: any) => app.scholarship_id === scholarshipId && app.status === 'pending'
         );
 
         setApplicationsData(filteredApplications);

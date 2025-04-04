@@ -58,20 +58,20 @@ export const fetchScholarshipsData = async (): Promise<Scholarship[]> => {
       console.error("Error in Supabase votes call:", error);
     }
 
-    const transformedScholarships: Scholarship[] = scholarshipsData.map((scholarship) => {
+    const transformedScholarships: Scholarship[] = scholarshipsData.map((scholarship: any) => {
       const scholarshipApplications = applicationsData.filter(
-        (app) => app.scholarship_id === scholarship.id
+        (app: any) => app.scholarship_id === scholarship.id
       );
       
       const scholarshipVotes = votesData.filter(
-        (vote) => vote.scholarship_id === scholarship.id
+        (vote: any) => vote.scholarship_id === scholarship.id
       );
       
-      const applicants = scholarshipApplications.map((app) => app.applicant_address);
-      const voters = scholarshipVotes.map((vote) => vote.voter_address);
+      const applicants = scholarshipApplications.map((app: any) => app.applicant_address);
+      const voters = scholarshipVotes.map((vote: any) => vote.voter_address);
       
-      const votesFor = scholarshipVotes.filter((vote) => vote.vote_type).length;
-      const votesAgainst = scholarshipVotes.filter((vote) => !vote.vote_type).length;
+      const votesFor = scholarshipVotes.filter((vote: any) => vote.vote_type).length;
+      const votesAgainst = scholarshipVotes.filter((vote: any) => !vote.vote_type).length;
 
       return {
         id: scholarship.id,
@@ -79,7 +79,7 @@ export const fetchScholarshipsData = async (): Promise<Scholarship[]> => {
         description: scholarship.description,
         amount: Number(scholarship.amount),
         creator_address: scholarship.creator_address,
-        recipient: scholarshipApplications.find(app => app.status === 'approved')?.applicant_address,
+        recipient: scholarshipApplications.find((app: any) => app.status === 'approved')?.applicant_address,
         status: scholarship.status as ScholarshipStatus,
         votes: {
           for: votesFor,
@@ -115,7 +115,7 @@ export const fetchUserApplications = async (address: string): Promise<any[]> => 
       }
       
       // Filter applications by applicant address
-      return (data || []).filter(app => app.applicant_address === address);
+      return (data || []).filter((app: any) => app.applicant_address === address);
     } catch (error) {
       console.error("Error in Supabase call:", error);
       return [];
@@ -146,7 +146,7 @@ export const applyForScholarshipSafely = async (scholarshipId: string, address: 
       } else {
         // Filter applications locally
         existingApps = (data || []).filter(
-          app => app.scholarship_id === scholarshipId && app.applicant_address === address
+          (app: any) => app.scholarship_id === scholarshipId && app.applicant_address === address
         );
         
         if (existingApps && existingApps.length > 0) {
