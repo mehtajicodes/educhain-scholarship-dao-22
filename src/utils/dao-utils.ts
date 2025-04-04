@@ -71,11 +71,8 @@ export const fetchScholarshipsData = async () => {
     // Fetch scholarships
     let scholarshipsData;
     try {
-      // Execute the query using a function that returns a Promise
-      const fetchScholarships = async () => {
-        return client.from('scholarships').select('*');
-      };
-      const { data, error } = await fetchScholarships();
+      // Directly execute the Supabase query
+      const { data, error } = await client.from('scholarships').select('*');
       
       if (error) {
         console.error("Error fetching scholarships:", error);
@@ -96,11 +93,8 @@ export const fetchScholarshipsData = async () => {
     // Fetch applications
     let applicationsData = [];
     try {
-      // Execute the query using a function that returns a Promise
-      const fetchApplications = async () => {
-        return client.from('applications').select('*');
-      };
-      const { data, error } = await fetchApplications();
+      // Directly execute the Supabase query
+      const { data, error } = await client.from('applications').select('*');
       
       if (error) {
         console.error("Error fetching applications:", error);
@@ -114,11 +108,8 @@ export const fetchScholarshipsData = async () => {
     // Fetch votes
     let votesData = [];
     try {
-      // Execute the query using a function that returns a Promise
-      const fetchVotes = async () => {
-        return client.from('votes').select('*');
-      };
-      const { data, error } = await fetchVotes();
+      // Directly execute the Supabase query
+      const { data, error } = await client.from('votes').select('*');
       
       if (error) {
         console.error("Error fetching votes:", error);
@@ -178,11 +169,8 @@ export const fetchUserApplications = async (address: string) => {
     const client = getSupabaseClient();
     
     try {
-      // Execute the query using a function that returns a Promise
-      const fetchApplications = async () => {
-        return client.from('applications').select('*');
-      };
-      const { data, error } = await fetchApplications();
+      // Directly execute the Supabase query
+      const { data, error } = await client.from('applications').select('*');
       
       if (error) {
         console.error("Error fetching applications:", error);
@@ -213,11 +201,8 @@ export const applyForScholarshipSafely = async (scholarshipId: string, address: 
     // Fetch all applications
     let existingApps = [];
     try {
-      // Execute the query using a function that returns a Promise
-      const fetchApplications = async () => {
-        return client.from('applications').select('*');
-      };
-      const { data, error } = await fetchApplications();
+      // Directly execute the Supabase query
+      const { data, error } = await client.from('applications').select('*');
       
       if (error) {
         console.error("Error checking existing applications:", error);
