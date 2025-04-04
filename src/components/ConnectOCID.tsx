@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { OCConnect } from '@opencampus/ocid-connect-js';
@@ -28,17 +27,11 @@ export function ConnectOCID() {
       if (window.location.search.includes('code=')) {
         setIsConnecting(true);
         try {
-          // Create a standalone instance of OCConnect
-          const OCConnectInstance = OCConnect;
+          // Initialize the OCID SDK properly
+          const ocidInstance = OCConnect;
           
-          // Create a new instance with proper configuration
-          const ocidInstance = new OCConnectInstance({
-            children: null,
-            ...ocidConfig
-          });
-          
-          // Access the underlying instance methods
-          if (ocidInstance.type && ocidInstance.type.prototype) {
+          // Access the underlying methods properly
+          if (ocidInstance.type && ocidInstance.type.prototype && ocidInstance.type.prototype.handleRedirect) {
             const result = await ocidInstance.type.prototype.handleRedirect();
             
             if (result && result.profile) {
@@ -87,16 +80,10 @@ export function ConnectOCID() {
   const handleConnect = async () => {
     setIsConnecting(true);
     try {
-      // Create a standalone instance of OCConnect
-      const OCConnectInstance = OCConnect;
+      // Initialize the OCID SDK properly
+      const ocidInstance = OCConnect;
       
-      // Create a new instance with proper configuration
-      const ocidInstance = new OCConnectInstance({
-        children: null,
-        ...ocidConfig
-      });
-      
-      // Fix: Properly access the login method to avoid React hooks errors
+      // Access the login method properly
       if (ocidInstance.type && ocidInstance.type.prototype && ocidInstance.type.prototype.login) {
         await ocidInstance.type.prototype.login();
       } else {
