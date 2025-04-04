@@ -21,7 +21,7 @@ import { Banknote, FileText, Calendar, Check } from "lucide-react";
 import { useWallet } from "@/hooks/use-wallet";
 import { getSupabaseClient } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ethers } from "ethers"; // Import ethers
+import { ethers } from "ethers";
 
 export function FinancierDashboard() {
   const { scholarships, fundScholarship, loading } = useDAO();

@@ -49,10 +49,14 @@ const MOCK_SCHOLARSHIPS = [
   }
 ];
 
-// Safer Supabase API call handling - now exported
-export const safeSupabaseCall = async <T>(apiCall: () => Promise<{data: T | null, error: any}>, fallbackData: T | null = null): Promise<{data: T | null, error: any}> => {
+// Safe Supabase API call handling
+export const safeSupabaseCall = async <T>(
+  apiCall: () => Promise<{data: T | null, error: any}>, 
+  fallbackData: T | null = null
+): Promise<{data: T | null, error: any}> => {
   try {
-    return await apiCall();
+    const result = await apiCall();
+    return result;
   } catch (error) {
     console.error("Supabase API call failed:", error);
     return { data: fallbackData, error };
@@ -67,12 +71,12 @@ export const fetchScholarshipsData = async () => {
     // Fetch scholarships
     let scholarshipsData;
     try {
-      const scholarshipsResult = await client.from('scholarships').select('*');
-      if (scholarshipsResult.error) {
-        console.error("Error fetching scholarships:", scholarshipsResult.error);
+      const scholarshipsResponse = await client.from('scholarships').select('*');
+      if (scholarshipsResponse.error) {
+        console.error("Error fetching scholarships:", scholarshipsResponse.error);
         return MOCK_SCHOLARSHIPS;
       }
-      scholarshipsData = scholarshipsResult.data;
+      scholarshipsData = scholarshipsResponse.data;
     } catch (error) {
       console.error("Error in Supabase call:", error);
       return MOCK_SCHOLARSHIPS;
@@ -87,11 +91,11 @@ export const fetchScholarshipsData = async () => {
     // Fetch applications
     let applicationsData = [];
     try {
-      const applicationsResult = await client.from('applications').select('*');
-      if (applicationsResult.error) {
-        console.error("Error fetching applications:", applicationsResult.error);
+      const applicationsResponse = await client.from('applications').select('*');
+      if (applicationsResponse.error) {
+        console.error("Error fetching applications:", applicationsResponse.error);
       } else {
-        applicationsData = applicationsResult.data || [];
+        applicationsData = applicationsResponse.data || [];
       }
     } catch (error) {
       console.error("Error in Supabase applications call:", error);
@@ -100,11 +104,11 @@ export const fetchScholarshipsData = async () => {
     // Fetch votes
     let votesData = [];
     try {
-      const votesResult = await client.from('votes').select('*');
-      if (votesResult.error) {
-        console.error("Error fetching votes:", votesResult.error);
+      const votesResponse = await client.from('votes').select('*');
+      if (votesResponse.error) {
+        console.error("Error fetching votes:", votesResponse.error);
       } else {
-        votesData = votesResult.data || [];
+        votesData = votesResponse.data || [];
       }
     } catch (error) {
       console.error("Error in Supabase votes call:", error);
@@ -215,7 +219,7 @@ export const applyForScholarshipSafely = async (scholarshipId: string, address: 
       const insertResponse = await client.from('applications').insert({
         scholarship_id: scholarshipId,
         applicant_address: address,
-      });
+      }).select();
       
       if (insertResponse.error) {
         console.error("Error applying for scholarship:", insertResponse.error);
