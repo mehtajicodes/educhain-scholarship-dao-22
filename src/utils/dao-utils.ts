@@ -71,8 +71,10 @@ export const fetchScholarshipsData = async () => {
     // Fetch scholarships
     let scholarshipsData;
     try {
-      // Fixed: Execute the query properly without chaining
-      const { data, error } = await client.from('scholarships').select('*');
+      // Use a more direct approach to avoid TS issues
+      const scholarshipsResponse = await client.from('scholarships').select('*');
+      const error = scholarshipsResponse.error;
+      const data = scholarshipsResponse.data;
       
       if (error) {
         console.error("Error fetching scholarships:", error);
@@ -93,8 +95,10 @@ export const fetchScholarshipsData = async () => {
     // Fetch applications
     let applicationsData = [];
     try {
-      // Fixed: Execute the query properly without chaining
-      const { data, error } = await client.from('applications').select('*');
+      // Use a more direct approach to avoid TS issues
+      const applicationsResponse = await client.from('applications').select('*');
+      const error = applicationsResponse.error;
+      const data = applicationsResponse.data;
       
       if (error) {
         console.error("Error fetching applications:", error);
@@ -108,8 +112,10 @@ export const fetchScholarshipsData = async () => {
     // Fetch votes
     let votesData = [];
     try {
-      // Fixed: Execute the query properly without chaining
-      const { data, error } = await client.from('votes').select('*');
+      // Use a more direct approach to avoid TS issues
+      const votesResponse = await client.from('votes').select('*');
+      const error = votesResponse.error;
+      const data = votesResponse.data;
       
       if (error) {
         console.error("Error fetching votes:", error);
@@ -169,8 +175,10 @@ export const fetchUserApplications = async (address: string) => {
     const client = getSupabaseClient();
     
     try {
-      // Fixed: Execute the query properly without chaining
-      const { data, error } = await client.from('applications').select('*');
+      // Use a more direct approach to avoid TS issues
+      const applicationsResponse = await client.from('applications').select('*');
+      const error = applicationsResponse.error;
+      const data = applicationsResponse.data;
       
       if (error) {
         console.error("Error fetching applications:", error);
@@ -201,8 +209,10 @@ export const applyForScholarshipSafely = async (scholarshipId: string, address: 
     // Fetch all applications
     let existingApps = [];
     try {
-      // Fixed: Execute the query properly without chaining
-      const { data, error } = await client.from('applications').select('*');
+      // Use a more direct approach to avoid TS issues
+      const applicationsResponse = await client.from('applications').select('*');
+      const error = applicationsResponse.error;
+      const data = applicationsResponse.data;
       
       if (error) {
         console.error("Error checking existing applications:", error);
