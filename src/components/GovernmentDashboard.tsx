@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
@@ -28,18 +29,18 @@ export function GovernmentDashboard() {
       const client = getSupabaseClient();
       
       try {
-        // Fix: Use separate variable for query, and explicitly call promise methods
-        const applicationsQuery = client.from('applications').select('*');
-        const applicationsResponse = await applicationsQuery;
+        // Fix: Create a query object first, then await the response
+        const query = client.from('applications').select('*');
+        const response = await query;
         
-        if (applicationsResponse.error) {
-          console.error("Error fetching applications:", applicationsResponse.error);
+        if (response.error) {
+          console.error("Error fetching applications:", response.error);
           setApplicationsData([]);
           return;
         }
 
         // Filter applications for this scholarship with status pending
-        const filteredApplications = (applicationsResponse.data || []).filter(
+        const filteredApplications = (response.data || []).filter(
           app => app.scholarship_id === scholarshipId && app.status === 'pending'
         );
 
