@@ -70,8 +70,9 @@ export const fetchScholarshipsData = async () => {
     // Fetch scholarships
     let scholarshipsData;
     try {
-      // Fixed: Don't use nested await with select()
-      const scholarshipsResult = await client.from('scholarships').select('*');
+      // Fixed: Properly handle the async operations
+      const scholarshipsQuery = client.from('scholarships').select('*');
+      const scholarshipsResult = await scholarshipsQuery;
       
       if (scholarshipsResult.error) {
         console.error("Error fetching scholarships:", scholarshipsResult.error);
@@ -92,8 +93,9 @@ export const fetchScholarshipsData = async () => {
     // Fetch applications
     let applicationsData = [];
     try {
-      // Fixed: Don't use nested await with select()
-      const applicationsResult = await client.from('applications').select('*');
+      // Fixed: Properly handle the async operations
+      const applicationsQuery = client.from('applications').select('*');
+      const applicationsResult = await applicationsQuery;
       
       if (applicationsResult.error) {
         console.error("Error fetching applications:", applicationsResult.error);
@@ -107,8 +109,9 @@ export const fetchScholarshipsData = async () => {
     // Fetch votes
     let votesData = [];
     try {
-      // Fixed: Don't use nested await with select()
-      const votesResult = await client.from('votes').select('*');
+      // Fixed: Properly handle the async operations
+      const votesQuery = client.from('votes').select('*');
+      const votesResult = await votesQuery;
       
       if (votesResult.error) {
         console.error("Error fetching votes:", votesResult.error);
@@ -168,8 +171,9 @@ export const fetchUserApplications = async (address: string) => {
     const client = getSupabaseClient();
     
     try {
-      // Fixed: Don't use nested await with select()
-      const applicationsResult = await client.from('applications').select('*');
+      // Fixed: Properly handle the async operations
+      const applicationsQuery = client.from('applications').select('*');
+      const applicationsResult = await applicationsQuery;
       
       if (applicationsResult.error) {
         console.error("Error fetching applications:", applicationsResult.error);
@@ -200,8 +204,9 @@ export const applyForScholarshipSafely = async (scholarshipId: string, address: 
     // Fetch all applications
     let existingApps = [];
     try {
-      // Fixed: Don't use nested await with select()
-      const applicationsResult = await client.from('applications').select('*');
+      // Fixed: Properly handle the async operations
+      const applicationsQuery = client.from('applications').select('*');
+      const applicationsResult = await applicationsQuery;
       
       if (applicationsResult.error) {
         console.error("Error checking existing applications:", applicationsResult.error);

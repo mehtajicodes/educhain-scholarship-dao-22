@@ -1,6 +1,7 @@
+
 import { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { OCConnect } from '@opencampus/ocid-connect-js';
+import { OCConnect, useOCAuth } from '@opencampus/ocid-connect-js';
 import { User, Lock } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -27,12 +28,13 @@ export function ConnectOCID() {
       if (window.location.search.includes('code=')) {
         setIsConnecting(true);
         try {
-          // Initialize the OCID SDK properly
-          const ocidInstance = OCConnect;
+          // Use the useOCAuth hook directly
+          const ocAuth = await import('@opencampus/ocid-connect-js').then(module => 
+            new module.OCAuthSandbox(ocidConfig.opts)
+          );
           
-          // Access the underlying methods properly
-          if (ocidInstance.type && ocidInstance.type.prototype && ocidInstance.type.prototype.handleRedirect) {
-            const result = await ocidInstance.type.prototype.handleRedirect();
+          if (ocAuth.handleLoginRedirect) {
+            const result = await ocAuth.handleLoginRedirect();
             
             if (result && result.profile) {
               setOcidProfile(result.profile);
@@ -81,11 +83,12 @@ export function ConnectOCID() {
     setIsConnecting(true);
     try {
       // Initialize the OCID SDK properly
-      const ocidInstance = OCConnect;
+      const ocAuth = await import('@opencampus/ocid-connect-js').then(module => 
+        new module.OCAuthSandbox(ocidConfig.opts)
+      );
       
-      // Access the login method properly
-      if (ocidInstance.type && ocidInstance.type.prototype && ocidInstance.type.prototype.login) {
-        await ocidInstance.type.prototype.login();
+      if (ocAuth.signInWithRedirect) {
+        await ocAuth.signInWithRedirect();
       } else {
         throw new Error("Login method not available");
       }
