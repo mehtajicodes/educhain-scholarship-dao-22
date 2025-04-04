@@ -71,8 +71,9 @@ export const fetchScholarshipsData = async () => {
     // Fetch scholarships
     let scholarshipsData;
     try {
-      // Directly execute the Supabase query
-      const { data, error } = await client.from('scholarships').select('*');
+      // Fix: Properly await the Supabase query
+      const scholarshipsResult = await client.from('scholarships').select('*');
+      const { data, error } = scholarshipsResult;
       
       if (error) {
         console.error("Error fetching scholarships:", error);
@@ -93,8 +94,9 @@ export const fetchScholarshipsData = async () => {
     // Fetch applications
     let applicationsData = [];
     try {
-      // Directly execute the Supabase query
-      const { data, error } = await client.from('applications').select('*');
+      // Fix: Properly await the Supabase query
+      const applicationsResult = await client.from('applications').select('*');
+      const { data, error } = applicationsResult;
       
       if (error) {
         console.error("Error fetching applications:", error);
@@ -108,8 +110,9 @@ export const fetchScholarshipsData = async () => {
     // Fetch votes
     let votesData = [];
     try {
-      // Directly execute the Supabase query
-      const { data, error } = await client.from('votes').select('*');
+      // Fix: Properly await the Supabase query
+      const votesResult = await client.from('votes').select('*');
+      const { data, error } = votesResult;
       
       if (error) {
         console.error("Error fetching votes:", error);
@@ -169,8 +172,9 @@ export const fetchUserApplications = async (address: string) => {
     const client = getSupabaseClient();
     
     try {
-      // Directly execute the Supabase query
-      const { data, error } = await client.from('applications').select('*');
+      // Fix: Properly await the Supabase query
+      const applicationsResult = await client.from('applications').select('*');
+      const { data, error } = applicationsResult;
       
       if (error) {
         console.error("Error fetching applications:", error);
@@ -201,8 +205,9 @@ export const applyForScholarshipSafely = async (scholarshipId: string, address: 
     // Fetch all applications
     let existingApps = [];
     try {
-      // Directly execute the Supabase query
-      const { data, error } = await client.from('applications').select('*');
+      // Fix: Properly await the Supabase query
+      const applicationsResult = await client.from('applications').select('*');
+      const { data, error } = applicationsResult;
       
       if (error) {
         console.error("Error checking existing applications:", error);
