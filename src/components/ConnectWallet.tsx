@@ -3,10 +3,25 @@ import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { useWallet } from '@/hooks/use-wallet';
 import { Shield, Unlock, Lock } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 export function ConnectWallet() {
   const { isConnected, address, isLoading, connectWallet, disconnectWallet, formatAddress } = useWallet();
   const [showDisconnect, setShowDisconnect] = useState(false);
+  const { toast } = useToast();
+
+  const handleConnectClick = async () => {
+    try {
+      await connectWallet();
+    } catch (error) {
+      console.error("Connection error:", error);
+      toast({
+        title: "Connection Error",
+        description: "There was a problem connecting to your wallet. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div className="flex items-center gap-2">
@@ -38,7 +53,7 @@ export function ConnectWallet() {
         </div>
       ) : (
         <Button 
-          onClick={connectWallet} 
+          onClick={handleConnectClick} 
           disabled={isLoading}
           className="bg-purple-700 hover:bg-purple-800 text-white"
         >
