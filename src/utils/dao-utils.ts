@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { Scholarship, ScholarshipStatus } from '@/types/dao';
 import { getSupabaseClient } from '@/integrations/supabase/client';
@@ -71,10 +70,9 @@ export const fetchScholarshipsData = async () => {
     // Fetch scholarships
     let scholarshipsData;
     try {
-      // Execute the query directly without separating declaration and execution
-      const { data, error } = await client
-        .from('scholarships')
-        .select('*');
+      // Fix TypeScript error by calling the supabase function without storing the query
+      const result = await client.from('scholarships').select('*');
+      const { data, error } = result;
       
       if (error) {
         console.error("Error fetching scholarships:", error);
@@ -95,10 +93,9 @@ export const fetchScholarshipsData = async () => {
     // Fetch applications
     let applicationsData = [];
     try {
-      // Execute the query directly
-      const { data: anotherData, error: anotherError } = await client
-        .from('applications')
-        .select('*');
+      // Execute the query and store the result
+      const result = await client.from('applications').select('*');
+      const { data: anotherData, error: anotherError } = result;
       
       if (anotherError) {
         console.error("Error fetching applications:", anotherError);
@@ -112,10 +109,9 @@ export const fetchScholarshipsData = async () => {
     // Fetch votes
     let votesData = [];
     try {
-      // Execute the query directly
-      const { data: thirdData, error: thirdError } = await client
-        .from('votes')
-        .select('*');
+      // Execute the query and store the result
+      const result = await client.from('votes').select('*');
+      const { data: thirdData, error: thirdError } = result;
       
       if (thirdError) {
         console.error("Error fetching votes:", thirdError);
@@ -175,10 +171,9 @@ export const fetchUserApplications = async (address: string) => {
     const client = getSupabaseClient();
     
     try {
-      // Execute the query directly
-      const { data, error } = await client
-        .from('applications')
-        .select('*');
+      // Fix TypeScript error by calling the supabase function without storing the query
+      const result = await client.from('applications').select('*');
+      const { data, error } = result;
       
       if (error) {
         console.error("Error fetching applications:", error);
@@ -209,10 +204,9 @@ export const applyForScholarshipSafely = async (scholarshipId: string, address: 
     // Fetch all applications
     let existingApps = [];
     try {
-      // Execute the query directly
-      const { data, error } = await client
-        .from('applications')
-        .select('*');
+      // Fix TypeScript error by calling the supabase function without storing the query
+      const result = await client.from('applications').select('*');
+      const { data, error } = result;
       
       if (error) {
         console.error("Error checking existing applications:", error);
