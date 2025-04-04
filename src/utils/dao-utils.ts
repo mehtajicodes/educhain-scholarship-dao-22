@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { Scholarship, ScholarshipStatus } from '@/types/dao';
 import { getSupabaseClient } from '@/integrations/supabase/client';
@@ -71,15 +70,14 @@ export const fetchScholarshipsData = async () => {
     // Fetch scholarships
     let scholarshipsData;
     try {
-      // Fix: Create the query object first, then call .then() or await on it
       const query = client.from('scholarships').select('*');
-      const response = await query;
+      const { data, error } = await query;
       
-      if (response.error) {
-        console.error("Error fetching scholarships:", response.error);
+      if (error) {
+        console.error("Error fetching scholarships:", error);
         return MOCK_SCHOLARSHIPS;
       }
-      scholarshipsData = response.data;
+      scholarshipsData = data;
     } catch (error) {
       console.error("Error in Supabase call:", error);
       return MOCK_SCHOLARSHIPS;
@@ -94,14 +92,13 @@ export const fetchScholarshipsData = async () => {
     // Fetch applications
     let applicationsData = [];
     try {
-      // Fix: Create the query object first, then call .then() or await on it
-      const query = client.from('applications').select('*');
-      const response = await query;
+      const anotherQuery = client.from('applications').select('*');
+      const { data: anotherData, error: anotherError } = await anotherQuery;
       
-      if (response.error) {
-        console.error("Error fetching applications:", response.error);
+      if (anotherError) {
+        console.error("Error fetching applications:", anotherError);
       } else {
-        applicationsData = response.data || [];
+        applicationsData = anotherData || [];
       }
     } catch (error) {
       console.error("Error in Supabase applications call:", error);
@@ -110,14 +107,13 @@ export const fetchScholarshipsData = async () => {
     // Fetch votes
     let votesData = [];
     try {
-      // Fix: Create the query object first, then call .then() or await on it
-      const query = client.from('votes').select('*');
-      const response = await query;
+      const thirdQuery = client.from('votes').select('*');
+      const { data: thirdData, error: thirdError } = await thirdQuery;
       
-      if (response.error) {
-        console.error("Error fetching votes:", response.error);
+      if (thirdError) {
+        console.error("Error fetching votes:", thirdError);
       } else {
-        votesData = response.data || [];
+        votesData = thirdData || [];
       }
     } catch (error) {
       console.error("Error in Supabase votes call:", error);
@@ -172,17 +168,16 @@ export const fetchUserApplications = async (address: string) => {
     const client = getSupabaseClient();
     
     try {
-      // Fix: Create the query object first, then call .then() or await on it
       const query = client.from('applications').select('*');
-      const response = await query;
+      const { data, error } = await query;
       
-      if (response.error) {
-        console.error("Error fetching applications:", response.error);
+      if (error) {
+        console.error("Error fetching applications:", error);
         return [];
       }
       
       // Filter applications by applicant address
-      return (response.data || []).filter(app => app.applicant_address === address);
+      return (data || []).filter(app => app.applicant_address === address);
     } catch (error) {
       console.error("Error in Supabase call:", error);
       return [];
@@ -205,16 +200,15 @@ export const applyForScholarshipSafely = async (scholarshipId: string, address: 
     // Fetch all applications
     let existingApps = [];
     try {
-      // Fix: Create the query object first, then call .then() or await on it
       const query = client.from('applications').select('*');
-      const response = await query;
+      const { data, error } = await query;
       
-      if (response.error) {
-        console.error("Error checking existing applications:", response.error);
+      if (error) {
+        console.error("Error checking existing applications:", error);
         // If we can't check, assume no existing application and try to create one
       } else {
         // Filter applications locally
-        existingApps = (response.data || []).filter(
+        existingApps = (data || []).filter(
           app => app.scholarship_id === scholarshipId && app.applicant_address === address
         );
         
