@@ -1,11 +1,11 @@
 
-import { Header } from "@/components/Header";
 import { Button } from "@/components/ui/button";
 import { useWallet } from "@/hooks/use-wallet";
-import { ArrowRight, Shield, Users } from "lucide-react";
+import { ArrowRight, Shield, SquareCode, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import { AnonAadhaarLogin } from "@/components/AnonAadhaarLogin";
 import { useAnonAadhaarContext } from "@/contexts/AnonAadhaarContext";
+import { HeroVideoDialogDemo } from "@/components/VideoBox";
 
 const Index = () => {
   const { isConnected } = useWallet();
@@ -13,10 +13,12 @@ const Index = () => {
 
   return (
     <div className="min-h-screen flex flex-col">
-      <Header />
       
       <main className="flex-1">
         {/* Hero Section */}
+{/* <section className="border border-red-500 h-screen px-4 bg-white flex justify-center w-full">
+  <img src="/heroBg.png" alt="heroBg" />
+</section> */}
         <section className="py-16 md:py-24 px-4 bg-gradient-to-br from-edu-light via-white to-edu-light/50">
           <div className="container mx-auto max-w-6xl">
             <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -29,7 +31,7 @@ const Index = () => {
                 </p>
                 <div className="flex flex-wrap gap-4 pt-4">
                   <Link to="/scholarships">
-                    <Button size="lg" className="bg-edu-primary hover:bg-edu-primary/90">
+                    <Button size="lg" className="bg-purple-700 hover:bg-purple-700/90">
                       Browse Scholarships
                       <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
@@ -43,13 +45,18 @@ const Index = () => {
                 
                 <div className="flex gap-6 pt-6">
                   <div className="flex items-center gap-2">
-                    <Users className="h-5 w-5 text-edu-secondary" />
+                    <Users className="h-5 w-5 text-purple-600" />
                     <span className="text-gray-600">Community Governed</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Shield className="h-5 w-5 text-edu-secondary" />
+                    <Shield className="h-5 w-5 text-purple-600" />
                     <span className="text-gray-600">Private & Secure</span>
                   </div>
+                </div>
+                <div className="flex gap-2 items-center">
+                <SquareCode  className="h-5 w-5 text-purple-600"/>
+                  <span className="text-gray-600">Built on</span>
+                  <img src="/educhainLogo.png" alt="educhainLogo" height={180} width={180} />
                 </div>
               </div>
               
@@ -63,7 +70,7 @@ const Index = () => {
                       </p>
                       <div className="flex justify-center pt-4">
                         <Link to="/scholarships">
-                          <Button size="lg" className="bg-edu-primary hover:bg-edu-primary/90">
+                          <Button size="lg" className="bg-green-600 hover:bg-green-600/90">
                             Connect & Explore
                             <ArrowRight className="ml-2 h-4 w-4" />
                           </Button>
@@ -83,7 +90,7 @@ const Index = () => {
                       </p>
                       <div className="flex justify-center pt-4">
                         <Link to="/my-dashboard">
-                          <Button size="lg" className="bg-edu-primary hover:bg-edu-primary/90">
+                          <Button size="lg" className="bg-green-600 hover:bg-green-600/90">
                             Go to Your Dashboard
                             <ArrowRight className="ml-2 h-4 w-4" />
                           </Button>
@@ -96,7 +103,16 @@ const Index = () => {
             </div>
           </div>
         </section>
+
+        <section className="  bg-white flex justify-center">
         
+        <img src="mainBg.png" alt="mainBg" height={1400} width={1400} />
+        </section>
+        <section className="my-10 py-16 px-4 bg-white flex justify-center">
+        
+        <HeroVideoDialogDemo />
+        </section>
+
         {/* Features Section */}
         <section className="py-16 px-4 bg-white">
           <div className="container mx-auto max-w-6xl">
@@ -142,55 +158,7 @@ const Index = () => {
         </section>
       </main>
       
-      <footer className="bg-edu-dark text-white py-12 px-4">
-        <div className="container mx-auto max-w-6xl">
-          <div className="grid md:grid-cols-4 gap-8">
-            <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="rounded-md bg-white p-1">
-                  <div className="text-lg font-bold text-edu-primary">E</div>
-                </div>
-                <div className="font-bold text-lg text-white">
-                  EduDAO
-                </div>
-              </div>
-              <p className="text-gray-400">
-                A decentralized autonomous organization for transparent student scholarships and grants.
-              </p>
-            </div>
-            
-            <div>
-              <h3 className="font-bold mb-4">Platform</h3>
-              <ul className="space-y-2">
-                <li><Link to="/scholarships" className="text-gray-400 hover:text-white transition-colors">Scholarships</Link></li>
-                <li><Link to="/my-dashboard" className="text-gray-400 hover:text-white transition-colors">My Dashboard</Link></li>
-                <li><Link to="/about" className="text-gray-400 hover:text-white transition-colors">About</Link></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-bold mb-4">Resources</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Documentation</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">EDUChain</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Anon Aadhaar</a></li>
-              </ul>
-            </div>
-            
-            <div>
-              <h3 className="font-bold mb-4">Legal</h3>
-              <ul className="space-y-2">
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Privacy Policy</a></li>
-                <li><a href="#" className="text-gray-400 hover:text-white transition-colors">Terms of Service</a></li>
-              </ul>
-            </div>
-          </div>
-          
-          <div className="mt-12 pt-6 border-t border-gray-700 text-gray-400 text-sm">
-            <p>© {new Date().getFullYear()} EduDAO. All rights reserved.</p>
-          </div>
-        </div>
-      </footer>
+     
     </div>
   );
 };

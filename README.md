@@ -1,69 +1,93 @@
-# Welcome to your Lovable project
 
-## Project info
+# ScholarDao
 
-**URL**: https://lovable.dev/projects/d0f10adc-db9f-4cc5-8245-2428abb7494a
+Claiming government scholarships is a complicated process involving manual steps for applying, verifying, and releasing funds. This can take anywhere from 15 to 30 days or even longer. Our project aims to bring transparency to the scholarship program by allowing applicants and officers to track the live status of applications and access various scholarship programs on a single platform. This makes the process easier for everyone.
 
-## How can I edit this code?
+Students are required to upload their documents, which will be verified through a multifactor authentication system, including video and photo verification. To ensure security and privacy, we are using Zero-Knowledge Proof (ZK-Poof) technology for document verification. This allows the system to verify the documents without revealing any personal details, ensuring full confidentiality.
 
-There are several ways of editing your application.
+For transactions, we are integrating EduChain, a blockchain-based system, which will handle the transfer of funds securely and transparently. Using EduChain, all transactions related to scholarship funds will be traceable, providing real-time updates to applicants and officers. This blockchain integration ensures that every transaction is recorded on a decentralized ledger, making the entire process tamper-proof and more trustworthy.
+## Screenshots And Live Link
 
-**Use Lovable**
+Live Link: https://acehack-scholardao.vercel.app/
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/d0f10adc-db9f-4cc5-8245-2428abb7494a) and start prompting.
+<table>
+  <tr>
+    <td><img src="image.jpeg" alt="Image 1" width="500" /></td>
+    <td align="right"><img src="image2.jpeg" alt="Image 2" width="500" /></td>
+  </tr>
+  <tr>
+    <td><img src="image3.jpeg" alt="Image 3" width="500" /></td>
+    <td align="right"><img src="image4.jpeg" alt="Image 4" width="500" /></td>
+  </tr>
+  <tr>
+    <td colspan="2" align="center"><img src="image6.jpeg" alt="Image 5" width="500" /></td>
+  </tr>
+</table>
 
-Changes made via Lovable will be committed automatically to this repo.
 
-**Use your preferred IDE**
+## Instruction
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+Kindly follow the following Instructions to run the project in your system and install the necessary requirements
+## Run Locally
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+Clone the project
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+```bash
+  git clone https://github.com/kartikmehta18/ScholarDao.git
 ```
 
-**Edit a file directly in GitHub**
+Go to the project directory
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+  cd ScholarDao
+```
 
-**Use GitHub Codespaces**
+Install dependencies
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```bash
+  npm install
+```
 
-## What technologies are used for this project?
+Start the server
 
-This project is built with .
+```bash
+  npm run start
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
 
-## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/d0f10adc-db9f-4cc5-8245-2428abb7494a) and click on Share -> Publish.
+## Environment Variables
 
-## I want to use a custom domain - is that possible?
+To run this project, you will need to add the following environment variables to your .env file
 
-We don't support custom domains (yet). If you want to deploy your project under your own domain then we recommend using Netlify. Visit our docs for more details: [Custom domains](https://docs.lovable.dev/tips-tricks/custom-domain/)
+`VITE_SUPABASE_URL=`
+
+`VITE_SUPABASE_ANON_KEY=`
+
+
+## Documentation
+
+[Anon Aadhaar](https://documentation.anon-aadhaar.pse.dev/docs/intro)
+
+[EduChain](https://devdocs.opencampus.xyz/)
+
+
+## Tech Stack
+
+**Client:** React, TailwindCSS , Shadcn, Educhain 
+
+**Server:**  Supabase ,  Solidity ,Anon Aadhaar
+
+
+## License
+
+[MIT](https://choosealicense.com/licenses/mit/)
+
+
+## Features
+
+- Light/dark mode toggle
+- Live previews
+- Fullscreen mode
+- Cross platform
+
