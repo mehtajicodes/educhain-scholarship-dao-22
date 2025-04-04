@@ -48,27 +48,22 @@ export function FinancierDashboard() {
 
     try {
       // Fetch all applications
-      let allApplications = [];
-      let error = null;
-      
-      try {
-        const response = await client.from('applications').select('*');
-        allApplications = response.data || [];
-        error = response.error;
-      } catch (err) {
-        console.error("Error in Supabase call:", err);
-        error = err;
-      }
+      const response = await client.from('applications').select('*').then(res => {
+        return { data: res.data, error: res.error };
+      }).catch(error => {
+        console.error("Error in Supabase call:", error);
+        return { data: null, error };
+      });
 
       setLoadingApplications(false);
 
-      if (error) {
-        console.error("Error fetching applications:", error);
+      if (response.error) {
+        console.error("Error fetching applications:", response.error);
         throw new Error("Failed to fetch applications");
       }
 
       // Filter applications for this scholarship with approved status
-      const applications = (allApplications || []).filter(
+      const applications = (response.data || []).filter(
         app => app.scholarship_id === scholarshipId && app.status === 'approved'
       );
 
@@ -76,7 +71,7 @@ export function FinancierDashboard() {
 
       if (!applicationsToUse || applicationsToUse.length === 0) {
         // If no approved applications found, try to find any application for this scholarship
-        const anyApplications = (allApplications || []).filter(
+        const anyApplications = (response.data || []).filter(
           app => app.scholarship_id === scholarshipId
         );
 

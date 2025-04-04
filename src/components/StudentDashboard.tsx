@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useDAO } from "@/contexts/DAOContext";
@@ -6,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Check, FileText, Award } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWallet } from "@/hooks/use-wallet";
-import { getSupabaseClient } from "@/integrations/supabase/client";
 import { fetchUserApplications } from "@/utils/dao-utils";
 
 export function StudentDashboard() {

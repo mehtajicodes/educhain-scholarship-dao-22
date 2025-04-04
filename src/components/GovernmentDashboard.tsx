@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
@@ -6,6 +7,7 @@ import { useDAO } from "@/contexts/DAOContext";
 import { Scholarship } from "@/types/dao";
 import { Award, Check, Users, FileText } from "lucide-react";
 import { getSupabaseClient } from "@/integrations/supabase/client";
+import { safeSupabaseCall } from "@/utils/dao-utils";
 
 export function GovernmentDashboard() {
   const { scholarships, approveScholarship, loading } = useDAO();
@@ -26,26 +28,22 @@ export function GovernmentDashboard() {
 
     try {
       const client = getSupabaseClient();
-      let applications = [];
-      let error = null;
       
-      try {
-        const response = await client.from('applications').select('*');
-        applications = response.data || [];
-        error = response.error;
-      } catch (err) {
-        console.error("Error in Supabase call:", err);
-        error = err;
-      }
+      const response = await client.from('applications').select('*').then(res => {
+        return { data: res.data, error: res.error };
+      }).catch(error => {
+        console.error("Error in Supabase call:", error);
+        return { data: null, error };
+      });
 
-      if (error) {
-        console.error("Error fetching applications:", error);
+      if (response.error) {
+        console.error("Error fetching applications:", response.error);
         setApplicationsData([]);
         return;
       }
 
       // Filter applications for this scholarship with status pending
-      const filteredApplications = (applications || []).filter(
+      const filteredApplications = (response.data || []).filter(
         app => app.scholarship_id === scholarshipId && app.status === 'pending'
       );
 
