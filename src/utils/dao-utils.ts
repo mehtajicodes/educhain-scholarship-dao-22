@@ -65,19 +65,18 @@ export const fetchScholarshipsData = async () => {
     const client = getSupabaseClient();
     
     // Fetch scholarships
-    const scholarshipsResult = await client.from('scholarships').select('*').then(res => {
-      return { data: res.data, error: res.error };
-    }).catch(error => {
+    let scholarshipsData;
+    try {
+      const scholarshipsResult = await client.from('scholarships').select('*');
+      if (scholarshipsResult.error) {
+        console.error("Error fetching scholarships:", scholarshipsResult.error);
+        return MOCK_SCHOLARSHIPS;
+      }
+      scholarshipsData = scholarshipsResult.data;
+    } catch (error) {
       console.error("Error in Supabase call:", error);
-      return { data: null, error };
-    });
-    
-    if (scholarshipsResult.error) {
-      console.error("Error fetching scholarships:", scholarshipsResult.error);
       return MOCK_SCHOLARSHIPS;
     }
-
-    const scholarshipsData = scholarshipsResult.data;
     
     // If no data returned, use mock data
     if (!scholarshipsData || scholarshipsData.length === 0) {
@@ -86,29 +85,29 @@ export const fetchScholarshipsData = async () => {
     }
 
     // Fetch applications
-    const applicationsResult = await client.from('applications').select('*').then(res => {
-      return { data: res.data, error: res.error };
-    }).catch(error => {
-      console.error("Error in Supabase call:", error);
-      return { data: [], error };
-    });
-    
-    const applicationsData = applicationsResult.data || [];
-    if (applicationsResult.error) {
-      console.error("Error fetching applications:", applicationsResult.error);
+    let applicationsData = [];
+    try {
+      const applicationsResult = await client.from('applications').select('*');
+      if (applicationsResult.error) {
+        console.error("Error fetching applications:", applicationsResult.error);
+      } else {
+        applicationsData = applicationsResult.data || [];
+      }
+    } catch (error) {
+      console.error("Error in Supabase applications call:", error);
     }
-
-    // Fetch votes
-    const votesResult = await client.from('votes').select('*').then(res => {
-      return { data: res.data, error: res.error };
-    }).catch(error => {
-      console.error("Error in Supabase call:", error);
-      return { data: [], error };
-    });
     
-    const votesData = votesResult.data || [];
-    if (votesResult.error) {
-      console.error("Error fetching votes:", votesResult.error);
+    // Fetch votes
+    let votesData = [];
+    try {
+      const votesResult = await client.from('votes').select('*');
+      if (votesResult.error) {
+        console.error("Error fetching votes:", votesResult.error);
+      } else {
+        votesData = votesResult.data || [];
+      }
+    } catch (error) {
+      console.error("Error in Supabase votes call:", error);
     }
 
     const transformedScholarships: Scholarship[] = scholarshipsData.map((scholarship) => {
@@ -159,20 +158,20 @@ export const fetchUserApplications = async (address: string) => {
   try {
     const client = getSupabaseClient();
     
-    const response = await client.from('applications').select('*').then(res => {
-      return { data: res.data, error: res.error };
-    }).catch(error => {
+    try {
+      const response = await client.from('applications').select('*');
+      
+      if (response.error) {
+        console.error("Error fetching applications:", response.error);
+        return [];
+      }
+      
+      // Filter applications by applicant address
+      return (response.data || []).filter(app => app.applicant_address === address);
+    } catch (error) {
       console.error("Error in Supabase call:", error);
-      return { data: null, error };
-    });
-    
-    if (response.error) {
-      console.error("Error fetching applications:", response.error);
       return [];
     }
-    
-    // Filter applications by applicant address
-    return (response.data || []).filter(app => app.applicant_address === address);
   } catch (error) {
     console.error("Error in fetchUserApplications:", error);
     return [];
@@ -189,44 +188,45 @@ export const applyForScholarshipSafely = async (scholarshipId: string, address: 
     const client = getSupabaseClient();
     
     // Fetch all applications
-    const allApplicationsResponse = await client.from('applications').select('*').then(res => {
-      return { data: res.data, error: res.error };
-    }).catch(error => {
-      console.error("Error in Supabase call:", error);
-      return { data: null, error };
-    });
-    
-    if (allApplicationsResponse.error) {
-      console.error("Error checking existing applications:", allApplicationsResponse.error);
-      // If we can't check, assume no existing application and try to create one
-    } else {
-      // Filter applications locally
-      const existingApps = (allApplicationsResponse.data || []).filter(
-        app => app.scholarship_id === scholarshipId && app.applicant_address === address
-      );
+    let existingApps = [];
+    try {
+      const allApplicationsResponse = await client.from('applications').select('*');
       
-      if (existingApps && existingApps.length > 0) {
-        return { success: true, error: null, existing: true };
+      if (allApplicationsResponse.error) {
+        console.error("Error checking existing applications:", allApplicationsResponse.error);
+        // If we can't check, assume no existing application and try to create one
+      } else {
+        // Filter applications locally
+        existingApps = (allApplicationsResponse.data || []).filter(
+          app => app.scholarship_id === scholarshipId && app.applicant_address === address
+        );
+        
+        if (existingApps && existingApps.length > 0) {
+          return { success: true, error: null, existing: true };
+        }
       }
+    } catch (error) {
+      console.error("Error in Supabase check:", error);
+      // Continue to try insert
     }
     
     // Insert new application
-    const insertResponse = await client.from('applications').insert({
-      scholarship_id: scholarshipId,
-      applicant_address: address,
-    }).then(res => {
-      return { data: res.data, error: res.error };
-    }).catch(error => {
+    try {
+      const insertResponse = await client.from('applications').insert({
+        scholarship_id: scholarshipId,
+        applicant_address: address,
+      });
+      
+      if (insertResponse.error) {
+        console.error("Error applying for scholarship:", insertResponse.error);
+        return { success: false, error: insertResponse.error.message || "Failed to apply" };
+      }
+      
+      return { success: true, error: null };
+    } catch (error: any) {
       console.error("Error in Supabase insert:", error);
-      return { data: null, error };
-    });
-    
-    if (insertResponse.error) {
-      console.error("Error applying for scholarship:", insertResponse.error);
-      return { success: false, error: insertResponse.error.message || "Failed to apply" };
+      return { success: false, error: error.message };
     }
-    
-    return { success: true, error: null };
   } catch (error: any) {
     console.error("Error in applyForScholarshipSafely:", error);
     return { success: false, error: error.message };

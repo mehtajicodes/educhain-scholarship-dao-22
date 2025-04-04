@@ -7,7 +7,6 @@ import { useDAO } from "@/contexts/DAOContext";
 import { Scholarship } from "@/types/dao";
 import { Award, Check, Users, FileText } from "lucide-react";
 import { getSupabaseClient } from "@/integrations/supabase/client";
-import { safeSupabaseCall } from "@/utils/dao-utils";
 
 export function GovernmentDashboard() {
   const { scholarships, approveScholarship, loading } = useDAO();
@@ -29,26 +28,26 @@ export function GovernmentDashboard() {
     try {
       const client = getSupabaseClient();
       
-      const response = await client.from('applications').select('*').then(res => {
-        return { data: res.data, error: res.error };
-      }).catch(error => {
+      try {
+        const response = await client.from('applications').select('*');
+        
+        if (response.error) {
+          console.error("Error fetching applications:", response.error);
+          setApplicationsData([]);
+          return;
+        }
+
+        // Filter applications for this scholarship with status pending
+        const filteredApplications = (response.data || []).filter(
+          app => app.scholarship_id === scholarshipId && app.status === 'pending'
+        );
+
+        setApplicationsData(filteredApplications);
+        setSelectedScholarship(scholarshipId);
+      } catch (error) {
         console.error("Error in Supabase call:", error);
-        return { data: null, error };
-      });
-
-      if (response.error) {
-        console.error("Error fetching applications:", response.error);
         setApplicationsData([]);
-        return;
       }
-
-      // Filter applications for this scholarship with status pending
-      const filteredApplications = (response.data || []).filter(
-        app => app.scholarship_id === scholarshipId && app.status === 'pending'
-      );
-
-      setApplicationsData(filteredApplications);
-      setSelectedScholarship(scholarshipId);
     } catch (error) {
       console.error("Error fetching applications:", error);
       setApplicationsData([]);

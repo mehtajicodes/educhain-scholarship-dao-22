@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -48,30 +49,33 @@ export function FinancierDashboard() {
 
     try {
       // Fetch all applications
-      const response = await client.from('applications').select('*').then(res => {
-        return { data: res.data, error: res.error };
-      }).catch(error => {
+      let applications;
+      try {
+        const response = await client.from('applications').select('*');
+        
+        if (response.error) {
+          console.error("Error fetching applications:", response.error);
+          throw new Error("Failed to fetch applications");
+        }
+        
+        applications = response.data || [];
+      } catch (error) {
         console.error("Error in Supabase call:", error);
-        return { data: null, error };
-      });
+        throw new Error("Database connection error");
+      }
 
       setLoadingApplications(false);
 
-      if (response.error) {
-        console.error("Error fetching applications:", response.error);
-        throw new Error("Failed to fetch applications");
-      }
-
       // Filter applications for this scholarship with approved status
-      const applications = (response.data || []).filter(
+      const approvedApplications = applications.filter(
         app => app.scholarship_id === scholarshipId && app.status === 'approved'
       );
 
-      let applicationsToUse = applications;
+      let applicationsToUse = approvedApplications;
 
       if (!applicationsToUse || applicationsToUse.length === 0) {
         // If no approved applications found, try to find any application for this scholarship
-        const anyApplications = (response.data || []).filter(
+        const anyApplications = applications.filter(
           app => app.scholarship_id === scholarshipId
         );
 
