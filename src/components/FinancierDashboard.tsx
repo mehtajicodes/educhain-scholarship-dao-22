@@ -32,7 +32,6 @@ export function FinancierDashboard() {
     scholarships.filter((s) => s.status === "approved")
   );
 
-  // Update approved scholarships when scholarships change
   useEffect(() => {
     setApprovedScholarships(
       scholarships.filter((s) => s.status === "approved")
@@ -47,10 +46,10 @@ export function FinancierDashboard() {
     const client = getSupabaseClient();
 
     try {
-      // Fetch all applications
       let applications;
       try {
-        const { data, error } = await client.from('applications').select('*');
+        const applicationsQuery = client.from('applications').select('*');
+        const { data, error } = await applicationsQuery;
         
         if (error) {
           console.error("Error fetching applications:", error);
@@ -65,7 +64,6 @@ export function FinancierDashboard() {
 
       setLoadingApplications(false);
 
-      // Filter applications for this scholarship with approved status
       const approvedApplications = applications.filter(
         app => app.scholarship_id === scholarshipId && app.status === 'approved'
       );
@@ -73,7 +71,6 @@ export function FinancierDashboard() {
       let applicationsToUse = approvedApplications;
 
       if (!applicationsToUse || applicationsToUse.length === 0) {
-        // If no approved applications found, try to find any application for this scholarship
         const anyApplications = applications.filter(
           app => app.scholarship_id === scholarshipId
         );
@@ -82,11 +79,9 @@ export function FinancierDashboard() {
           throw new Error("No application found for this scholarship");
         }
 
-        // Use the first application we find
         applicationsToUse = [anyApplications[0]];
       }
 
-      // Payment logic using ethers
       if (window.ethereum) {
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         const signer = provider.getSigner();
@@ -101,13 +96,11 @@ export function FinancierDashboard() {
           value: ethers.utils.parseEther(scholarship.amount.toString()),
         };
 
-        // Estimate gas
         const gasEstimate = await signer.estimateGas(tx);
 
-        // Send transaction with estimated gas
         const transaction = await signer.sendTransaction({
           ...tx,
-          gasLimit: gasEstimate.mul(120).div(100), // Add 20% buffer to gas estimate
+          gasLimit: gasEstimate.mul(120).div(100),
         });
 
         toast({
@@ -115,10 +108,8 @@ export function FinancierDashboard() {
           description: `${scholarship.amount} EDU sent to student successfully`,
         });
 
-        // Wait for transaction to be mined
         await transaction.wait();
 
-        // Update scholarship status
         await fundScholarship(scholarshipId, applicationsToUse[0].id);
       } else {
         toast({
@@ -140,7 +131,6 @@ export function FinancierDashboard() {
     }
   };
 
-  // Calculate total funded amount
   const totalFunded = scholarships
     .filter((s) => s.status === "completed")
     .reduce((total, s) => total + s.amount, 0);

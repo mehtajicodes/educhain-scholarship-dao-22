@@ -70,9 +70,9 @@ export const fetchScholarshipsData = async () => {
     // Fetch scholarships
     let scholarshipsData;
     try {
-      // Create a query object first, then await its execution
-      const query = client.from('scholarships').select('*');
-      const scholarshipsResponse = await query;
+      // Fix: Use separate variable for query, and explicitly call promise methods
+      const scholarshipsQuery = client.from('scholarships').select('*');
+      const scholarshipsResponse = await scholarshipsQuery;
       
       if (scholarshipsResponse.error) {
         console.error("Error fetching scholarships:", scholarshipsResponse.error);
@@ -93,9 +93,9 @@ export const fetchScholarshipsData = async () => {
     // Fetch applications
     let applicationsData = [];
     try {
-      // Create a query object first, then await its execution
-      const query = client.from('applications').select('*');
-      const applicationsResponse = await query;
+      // Fix: Use separate variable for query, and explicitly call promise methods
+      const applicationsQuery = client.from('applications').select('*');
+      const applicationsResponse = await applicationsQuery;
       
       if (applicationsResponse.error) {
         console.error("Error fetching applications:", applicationsResponse.error);
@@ -109,9 +109,9 @@ export const fetchScholarshipsData = async () => {
     // Fetch votes
     let votesData = [];
     try {
-      // Create a query object first, then await its execution
-      const query = client.from('votes').select('*');
-      const votesResponse = await query;
+      // Fix: Use separate variable for query, and explicitly call promise methods
+      const votesQuery = client.from('votes').select('*');
+      const votesResponse = await votesQuery;
       
       if (votesResponse.error) {
         console.error("Error fetching votes:", votesResponse.error);
@@ -171,9 +171,9 @@ export const fetchUserApplications = async (address: string) => {
     const client = getSupabaseClient();
     
     try {
-      // Create a query object first, then await its execution
-      const query = client.from('applications').select('*');
-      const applicationsResponse = await query;
+      // Fix: Use separate variable for query, and explicitly call promise methods
+      const applicationsQuery = client.from('applications').select('*');
+      const applicationsResponse = await applicationsQuery;
       
       if (applicationsResponse.error) {
         console.error("Error fetching applications:", applicationsResponse.error);
@@ -204,9 +204,9 @@ export const applyForScholarshipSafely = async (scholarshipId: string, address: 
     // Fetch all applications
     let existingApps = [];
     try {
-      // Create a query object first, then await its execution
-      const query = client.from('applications').select('*');
-      const applicationsResponse = await query;
+      // Fix: Use separate variable for query, and explicitly call promise methods
+      const applicationsQuery = client.from('applications').select('*');
+      const applicationsResponse = await applicationsQuery;
       
       if (applicationsResponse.error) {
         console.error("Error checking existing applications:", applicationsResponse.error);

@@ -28,9 +28,9 @@ export function GovernmentDashboard() {
       const client = getSupabaseClient();
       
       try {
-        // Create a query object first, then await its execution
-        const query = client.from('applications').select('*');
-        const applicationsResponse = await query;
+        // Fix: Use separate variable for query, and explicitly call promise methods
+        const applicationsQuery = client.from('applications').select('*');
+        const applicationsResponse = await applicationsQuery;
         
         if (applicationsResponse.error) {
           console.error("Error fetching applications:", applicationsResponse.error);
