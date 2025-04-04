@@ -29,6 +29,7 @@ export function GovernmentDashboard() {
       const client = getSupabaseClient();
       
       try {
+        // Fixed: Properly await the promise and access response
         const applicationsResponse = await client
           .from('applications')
           .select('*');

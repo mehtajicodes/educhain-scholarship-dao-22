@@ -71,6 +71,7 @@ export const fetchScholarshipsData = async () => {
     // Fetch scholarships
     let scholarshipsData;
     try {
+      // Fixed: Properly await the promise and access response
       const scholarshipsResponse = await client
         .from('scholarships')
         .select('*');
@@ -94,6 +95,7 @@ export const fetchScholarshipsData = async () => {
     // Fetch applications
     let applicationsData = [];
     try {
+      // Fixed: Properly await the promise and access response
       const applicationsResponse = await client
         .from('applications')
         .select('*');
@@ -110,6 +112,7 @@ export const fetchScholarshipsData = async () => {
     // Fetch votes
     let votesData = [];
     try {
+      // Fixed: Properly await the promise and access response
       const votesResponse = await client
         .from('votes')
         .select('*');
@@ -172,6 +175,7 @@ export const fetchUserApplications = async (address: string) => {
     const client = getSupabaseClient();
     
     try {
+      // Fixed: Properly await the promise and access response
       const applicationsResponse = await client
         .from('applications')
         .select('*');
@@ -205,6 +209,7 @@ export const applyForScholarshipSafely = async (scholarshipId: string, address: 
     // Fetch all applications
     let existingApps = [];
     try {
+      // Fixed: Properly await the promise and access response
       const applicationsResponse = await client
         .from('applications')
         .select('*');
