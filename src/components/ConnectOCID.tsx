@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { User, Lock } from 'lucide-react';
@@ -84,7 +85,7 @@ export function ConnectOCID() {
       const ocAuth = new OCAuthSandbox(ocidConfig.opts);
       
       if (ocAuth.signInWithRedirect) {
-        // Fix: Pass an empty object as required by the API
+        // Fixed: Pass an empty object as required by the API
         await ocAuth.signInWithRedirect({});
       } else {
         throw new Error("Login method not available");

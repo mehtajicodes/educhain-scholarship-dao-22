@@ -1,69 +1,10 @@
 
-import { createClient } from '@supabase/supabase-js';
 import { Scholarship, ScholarshipStatus } from '@/types/dao';
 import { getSupabaseClient } from '@/integrations/supabase/client';
+import { MOCK_SCHOLARSHIPS } from './mock-data';
+import { executeQuery, executeInsert, executeUpdate } from './supabase-client';
 
-// Mock data to use when Supabase connection fails
-const MOCK_SCHOLARSHIPS = [
-  {
-    id: 'mock-1',
-    title: 'Computer Science Scholarship',
-    description: 'For students pursuing a degree in computer science',
-    amount: 0.5,
-    creator_address: '0x388C818CA8B9251b393131C08a736A67ccB19297',
-    recipient: null,
-    status: 'pending' as ScholarshipStatus,
-    votes: { for: 5, against: 1 },
-    created_at: Date.now() - 7 * 24 * 60 * 60 * 1000, // 7 days ago
-    deadline: Date.now() + 30 * 24 * 60 * 60 * 1000,  // 30 days from now
-    voters: [],
-    applicants: [],
-  },
-  {
-    id: 'mock-2',
-    title: 'Engineering Excellence',
-    description: 'Supporting future engineers in their academic journey',
-    amount: 0.75,
-    creator_address: '0x388C818CA8B9251b393131C08a736A67ccB19297',
-    recipient: '0x388175a170a0d8fcb99ff8867c00860fcf95a7cc',
-    status: 'approved' as ScholarshipStatus,
-    votes: { for: 8, against: 2 },
-    created_at: Date.now() - 14 * 24 * 60 * 60 * 1000, // 14 days ago
-    deadline: Date.now() + 15 * 24 * 60 * 60 * 1000,  // 15 days from now
-    voters: [],
-    applicants: ['0x388175a170a0d8fcb99ff8867c00860fcf95a7cc'],
-  },
-  {
-    id: 'mock-3',
-    title: 'Blockchain Development',
-    description: 'For students interested in blockchain technology',
-    amount: 1.0,
-    creator_address: '0x388C818CA8B9251b393131C08a736A67ccB19297',
-    recipient: '0x388175a170a0d8fcb99ff8867c00860fcf95a7cc',
-    status: 'completed' as ScholarshipStatus,
-    votes: { for: 10, against: 0 },
-    created_at: Date.now() - 60 * 24 * 60 * 60 * 1000, // 60 days ago
-    deadline: Date.now() - 15 * 24 * 60 * 60 * 1000,  // 15 days ago
-    voters: [],
-    applicants: ['0x388175a170a0d8fcb99ff8867c00860fcf95a7cc'],
-  }
-];
-
-// Safe Supabase API call handling
-export const safeSupabaseCall = async <T>(
-  apiCall: () => Promise<{data: T | null, error: any}>, 
-  fallbackData: T | null = null
-): Promise<{data: T | null, error: any}> => {
-  try {
-    const result = await apiCall();
-    return result;
-  } catch (error) {
-    console.error("Supabase API call failed:", error);
-    return { data: fallbackData, error };
-  }
-};
-
-export const fetchScholarshipsData = async () => {
+export const fetchScholarshipsData = async (): Promise<Scholarship[]> => {
   try {
     console.log("Fetching scholarships data...");
     const client = getSupabaseClient();
@@ -71,10 +12,7 @@ export const fetchScholarshipsData = async () => {
     // Fetch scholarships
     let scholarshipsData;
     try {
-      // Use a more direct approach to avoid TS issues
-      const scholarshipsResponse = await client.from('scholarships').select('*');
-      const error = scholarshipsResponse.error;
-      const data = scholarshipsResponse.data;
+      const { data, error } = await executeQuery(client, 'scholarships');
       
       if (error) {
         console.error("Error fetching scholarships:", error);
@@ -95,10 +33,7 @@ export const fetchScholarshipsData = async () => {
     // Fetch applications
     let applicationsData = [];
     try {
-      // Use a more direct approach to avoid TS issues
-      const applicationsResponse = await client.from('applications').select('*');
-      const error = applicationsResponse.error;
-      const data = applicationsResponse.data;
+      const { data, error } = await executeQuery(client, 'applications');
       
       if (error) {
         console.error("Error fetching applications:", error);
@@ -112,10 +47,7 @@ export const fetchScholarshipsData = async () => {
     // Fetch votes
     let votesData = [];
     try {
-      // Use a more direct approach to avoid TS issues
-      const votesResponse = await client.from('votes').select('*');
-      const error = votesResponse.error;
-      const data = votesResponse.data;
+      const { data, error } = await executeQuery(client, 'votes');
       
       if (error) {
         console.error("Error fetching votes:", error);
@@ -168,17 +100,14 @@ export const fetchScholarshipsData = async () => {
 };
 
 // Helper function to safely fetch applications
-export const fetchUserApplications = async (address: string) => {
+export const fetchUserApplications = async (address: string): Promise<any[]> => {
   if (!address) return [];
   
   try {
     const client = getSupabaseClient();
     
     try {
-      // Use a more direct approach to avoid TS issues
-      const applicationsResponse = await client.from('applications').select('*');
-      const error = applicationsResponse.error;
-      const data = applicationsResponse.data;
+      const { data, error } = await executeQuery(client, 'applications');
       
       if (error) {
         console.error("Error fetching applications:", error);
@@ -198,7 +127,7 @@ export const fetchUserApplications = async (address: string) => {
 };
 
 // Helper function to safely apply for scholarship
-export const applyForScholarshipSafely = async (scholarshipId: string, address: string) => {
+export const applyForScholarshipSafely = async (scholarshipId: string, address: string): Promise<{ success: boolean; error: string | null; existing?: boolean }> => {
   if (!address || !scholarshipId) {
     return { success: false, error: "Missing required information" };
   }
@@ -209,10 +138,7 @@ export const applyForScholarshipSafely = async (scholarshipId: string, address: 
     // Fetch all applications
     let existingApps = [];
     try {
-      // Use a more direct approach to avoid TS issues
-      const applicationsResponse = await client.from('applications').select('*');
-      const error = applicationsResponse.error;
-      const data = applicationsResponse.data;
+      const { data, error } = await executeQuery(client, 'applications');
       
       if (error) {
         console.error("Error checking existing applications:", error);
@@ -234,16 +160,14 @@ export const applyForScholarshipSafely = async (scholarshipId: string, address: 
     
     // Insert new application
     try {
-      const insertResult = await client
-        .from('applications')
-        .insert({
-          scholarship_id: scholarshipId,
-          applicant_address: address,
-        });
+      const { error } = await executeInsert(client, 'applications', {
+        scholarship_id: scholarshipId,
+        applicant_address: address,
+      });
       
-      if (insertResult.error) {
-        console.error("Error applying for scholarship:", insertResult.error);
-        return { success: false, error: insertResult.error.message || "Failed to apply" };
+      if (error) {
+        console.error("Error applying for scholarship:", error);
+        return { success: false, error: error.message || "Failed to apply" };
       }
       
       return { success: true, error: null };

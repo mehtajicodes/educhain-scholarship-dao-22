@@ -7,7 +7,7 @@ interface MetaMaskError {
   message: string;
 }
 
-const EDUCHAIN_CHAIN_ID = '656476';  // '656476' in decimal is '0xa0348' in hex
+const EDUCHAIN_CHAIN_ID = '0xa0348';  // Hexadecimal format for chain ID
 const EDUCHAIN_CONFIG = {
   chainId: EDUCHAIN_CHAIN_ID,
   chainName: 'EDU Chain Testnet',
@@ -40,28 +40,25 @@ export const useWallet = () => {
     if (!window.ethereum) return false;
 
     try {
-      // Create the query
-      const chainIdQuery = window.ethereum.request({ method: 'eth_chainId' });
-      
-      // Now await the result
-      const chainId = await chainIdQuery;
+      // Get current chain ID in hex
+      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
       
       if (chainId !== EDUCHAIN_CHAIN_ID) {
-        const switchQuery = window.ethereum.request({
-          method: 'wallet_switchEthereumChain',
-          params: [{ chainId: EDUCHAIN_CHAIN_ID }],
-        });
-        
         try {
-          await switchQuery;
+          // Try to switch to EduChain network
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: EDUCHAIN_CHAIN_ID }],
+          });
         } catch (switchError: any) {
+          // If the chain is not added to MetaMask, add it
           if (switchError.code === 4902) {
-            const addChainQuery = window.ethereum.request({
+            await window.ethereum.request({
               method: 'wallet_addEthereumChain',
               params: [EDUCHAIN_CONFIG],
             });
-            
-            await addChainQuery;
+          } else {
+            throw switchError;
           }
         }
       }
@@ -79,9 +76,8 @@ export const useWallet = () => {
       // Store the address in localStorage for persistence
       localStorage.setItem('wallet_address', walletAddress);
       
-      // Use our improved authentication method
-      const authQuery = authenticateWithWallet(walletAddress);
-      const { error } = await authQuery;
+      // Use improved authentication method
+      const { error } = await authenticateWithWallet(walletAddress);
       
       if (error) {
         console.error("Authentication error:", error);
@@ -115,11 +111,9 @@ export const useWallet = () => {
         return;
       }
 
-      const accountsQuery = window.ethereum.request({
+      const accounts = await window.ethereum.request({
         method: 'eth_requestAccounts',
       });
-      
-      const accounts = await accountsQuery;
 
       const currentAddress = accounts[0];
       setAddress(currentAddress);
@@ -155,15 +149,18 @@ export const useWallet = () => {
   useEffect(() => {
     if (window.ethereum) {
       const getAccounts = async () => {
-        const accountsQuery = window.ethereum.request({ method: 'eth_accounts' });
-        const accounts = await accountsQuery;
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
           
-        if (accounts.length > 0) {
-          setAddress(accounts[0]);
-          setIsConnected(true);
+          if (accounts.length > 0) {
+            setAddress(accounts[0]);
+            setIsConnected(true);
             
-          // Re-authenticate if wallet is already connected
-          await authenticateUser(accounts[0]);
+            // Re-authenticate if wallet is already connected
+            await authenticateUser(accounts[0]);
+          }
+        } catch (error) {
+          console.error('Error getting accounts:', error);
         }
       };
       
