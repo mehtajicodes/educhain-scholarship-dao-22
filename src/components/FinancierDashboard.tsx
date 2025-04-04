@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -47,12 +48,10 @@ export function FinancierDashboard() {
     const client = getSupabaseClient();
 
     try {
-      // Find the approved application for this scholarship
-      const { data: applications, error } = await client
+      // Fetch all applications first
+      const { data: allApplications, error } = await client
         .from("applications")
-        .select("*")
-        .eq("scholarship_id", scholarshipId)
-        .eq("status", "approved");
+        .select("*");
 
       setLoadingApplications(false);
 
@@ -60,22 +59,25 @@ export function FinancierDashboard() {
         throw error;
       }
 
+      // Filter applications for this scholarship with approved status
+      const applications = (allApplications || []).filter(
+        app => app.scholarship_id === scholarshipId && app.status === 'approved'
+      );
+
       let applicationsToUse = applications;
 
       if (!applicationsToUse || applicationsToUse.length === 0) {
-        // Try to find any application for this scholarship
-        const { data: allApplications, error: allAppsError } = await client
-          .from("applications")
-          .select("*")
-          .eq("scholarship_id", scholarshipId)
-          .limit(1);
+        // If no approved applications found, try to find any application for this scholarship
+        const anyApplications = (allApplications || []).filter(
+          app => app.scholarship_id === scholarshipId
+        );
 
-        if (allAppsError || !allApplications || allApplications.length === 0) {
+        if (!anyApplications || anyApplications.length === 0) {
           throw new Error("No application found for this scholarship");
         }
 
         // Use the first application we find
-        applicationsToUse = allApplications;
+        applicationsToUse = [anyApplications[0]];
       }
 
       // Payment logic using ethers

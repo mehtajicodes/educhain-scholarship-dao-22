@@ -26,13 +26,17 @@ export function StudentDashboard() {
     
     try {
       const client = getSupabaseClient();
-      // Fetch all applications by this user
-      const { data: applications, error } = await client
+      // Fetch all applications first
+      const { data: allApplications, error } = await client
         .from('applications')
-        .select('*')
-        .eq('applicant_address', address);
+        .select('*');
       
       if (error) throw error;
+      
+      // Filter applications by user address
+      const applications = (allApplications || []).filter(
+        app => app.applicant_address === address
+      );
       
       // Get IDs of scholarships user has applied to
       const appliedIds = applications?.map(app => app.scholarship_id) || [];

@@ -27,16 +27,19 @@ export function GovernmentDashboard() {
 
     try {
       const client = getSupabaseClient();
-      // Fetch applications for this scholarship
-      const { data, error } = await client
+      // Fetch all applications first
+      const { data: allApplications, error } = await client
         .from('applications')
-        .select('*')
-        .eq('scholarship_id', scholarshipId)
-        .eq('status', 'pending');
+        .select('*');
 
       if (error) throw error;
 
-      setApplicationsData(data || []);
+      // Filter applications for this scholarship with status pending
+      const applications = (allApplications || []).filter(
+        app => app.scholarship_id === scholarshipId && app.status === 'pending'
+      );
+
+      setApplicationsData(applications || []);
       setSelectedScholarship(scholarshipId);
     } catch (error) {
       console.error("Error fetching applications:", error);
