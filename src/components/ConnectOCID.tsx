@@ -1,12 +1,12 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { OCConnect, OCConnectConfig } from '@opencampus/ocid-connect-js';
+import { OCConnect } from '@opencampus/ocid-connect-js';
 import { User, Lock } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 
 // Configure the OCID Connect SDK
-const ocidConfig: OCConnectConfig = {
+const ocidConfig = {
   sandbox: true, // Set to false for production
   redirectUrl: window.location.origin, // Redirect back to our app
 };
@@ -18,15 +18,15 @@ export function ConnectOCID() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Initialize the OCID Connect SDK
-    const ocidConnect = new OCConnect(ocidConfig);
-    
     // Check if we're returning from an OCID authentication flow
     const checkAuth = async () => {
       if (window.location.search.includes('code=')) {
         setIsConnecting(true);
         try {
+          // Instantiate OCConnect inside the component effect
+          const ocidConnect = OCConnect(ocidConfig);
           const result = await ocidConnect.handleRedirect();
+          
           if (result && result.profile) {
             setOcidProfile(result.profile);
             setOcidConnected(true);
@@ -72,7 +72,8 @@ export function ConnectOCID() {
   const handleConnect = async () => {
     setIsConnecting(true);
     try {
-      const ocidConnect = new OCConnect(ocidConfig);
+      // Instantiate OCConnect properly - it's a function call, not a constructor
+      const ocidConnect = OCConnect(ocidConfig);
       await ocidConnect.login();
     } catch (error) {
       console.error('Failed to initiate OCID login:', error);

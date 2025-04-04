@@ -70,8 +70,9 @@ export const fetchScholarshipsData = async () => {
     // Fetch scholarships
     let scholarshipsData;
     try {
-      const query = client.from('scholarships').select('*');
-      const { data, error } = await query;
+      // Fix TypeScript error by creating the query first, then awaiting it
+      const scholarshipsQuery = client.from('scholarships').select('*');
+      const { data, error } = await scholarshipsQuery;
       
       if (error) {
         console.error("Error fetching scholarships:", error);
@@ -92,8 +93,9 @@ export const fetchScholarshipsData = async () => {
     // Fetch applications
     let applicationsData = [];
     try {
-      const anotherQuery = client.from('applications').select('*');
-      const { data: anotherData, error: anotherError } = await anotherQuery;
+      // Create query first, then await
+      const applicationsQuery = client.from('applications').select('*');
+      const { data: anotherData, error: anotherError } = await applicationsQuery;
       
       if (anotherError) {
         console.error("Error fetching applications:", anotherError);
@@ -107,8 +109,9 @@ export const fetchScholarshipsData = async () => {
     // Fetch votes
     let votesData = [];
     try {
-      const thirdQuery = client.from('votes').select('*');
-      const { data: thirdData, error: thirdError } = await thirdQuery;
+      // Create query first, then await
+      const votesQuery = client.from('votes').select('*');
+      const { data: thirdData, error: thirdError } = await votesQuery;
       
       if (thirdError) {
         console.error("Error fetching votes:", thirdError);
@@ -168,8 +171,9 @@ export const fetchUserApplications = async (address: string) => {
     const client = getSupabaseClient();
     
     try {
-      const query = client.from('applications').select('*');
-      const { data, error } = await query;
+      // Fix TypeScript error by creating the query first, then awaiting it
+      const applicationsQuery = client.from('applications').select('*');
+      const { data, error } = await applicationsQuery;
       
       if (error) {
         console.error("Error fetching applications:", error);
@@ -200,8 +204,9 @@ export const applyForScholarshipSafely = async (scholarshipId: string, address: 
     // Fetch all applications
     let existingApps = [];
     try {
-      const query = client.from('applications').select('*');
-      const { data, error } = await query;
+      // Fix TypeScript error by creating the query first, then awaiting it
+      const applicationsQuery = client.from('applications').select('*');
+      const { data, error } = await applicationsQuery;
       
       if (error) {
         console.error("Error checking existing applications:", error);
