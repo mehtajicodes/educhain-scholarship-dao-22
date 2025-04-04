@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -48,15 +47,24 @@ export function FinancierDashboard() {
     const client = getSupabaseClient();
 
     try {
-      // Fetch all applications first
-      const { data: allApplications, error } = await client
-        .from("applications")
-        .select("*");
+      // Fetch all applications
+      let allApplications = [];
+      let error = null;
+      
+      try {
+        const response = await client.from('applications').select('*');
+        allApplications = response.data || [];
+        error = response.error;
+      } catch (err) {
+        console.error("Error in Supabase call:", err);
+        error = err;
+      }
 
       setLoadingApplications(false);
 
       if (error) {
-        throw error;
+        console.error("Error fetching applications:", error);
+        throw new Error("Failed to fetch applications");
       }
 
       // Filter applications for this scholarship with approved status

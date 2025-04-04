@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useDAO } from "@/contexts/DAOContext";
@@ -8,6 +7,7 @@ import { Check, FileText, Award } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useWallet } from "@/hooks/use-wallet";
 import { getSupabaseClient } from "@/integrations/supabase/client";
+import { fetchUserApplications } from "@/utils/dao-utils";
 
 export function StudentDashboard() {
   const { address } = useWallet();
@@ -25,24 +25,11 @@ export function StudentDashboard() {
     if (!address) return;
     
     try {
-      const client = getSupabaseClient();
-      // Fetch all applications first
-      const { data: allApplications, error } = await client
-        .from('applications')
-        .select('*');
+      const applications = await fetchUserApplications(address);
       
-      if (error) throw error;
-      
-      // Filter applications by user address
-      const applications = (allApplications || []).filter(
-        app => app.applicant_address === address
-      );
-      
-      // Get IDs of scholarships user has applied to
       const appliedIds = applications?.map(app => app.scholarship_id) || [];
       setAppliedScholarships(appliedIds);
       
-      // Get IDs of scholarships user has been approved for
       const approvedApps = applications?.filter(app => app.status === 'approved') || [];
       const approvedIds = approvedApps.map(app => app.scholarship_id);
       setReceivedScholarships(approvedIds);
@@ -52,12 +39,10 @@ export function StudentDashboard() {
     }
   };
   
-  // Filter scholarships that user has applied for
   const myAppliedScholarships = scholarships.filter(s => 
     appliedScholarships.includes(s.id)
   );
   
-  // Filter scholarships that user has been approved for
   const myReceivedScholarships = scholarships.filter(s => 
     receivedScholarships.includes(s.id)
   );

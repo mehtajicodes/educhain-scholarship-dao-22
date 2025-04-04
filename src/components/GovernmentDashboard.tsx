@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
@@ -27,22 +26,34 @@ export function GovernmentDashboard() {
 
     try {
       const client = getSupabaseClient();
-      // Fetch all applications first
-      const { data: allApplications, error } = await client
-        .from('applications')
-        .select('*');
+      let applications = [];
+      let error = null;
+      
+      try {
+        const response = await client.from('applications').select('*');
+        applications = response.data || [];
+        error = response.error;
+      } catch (err) {
+        console.error("Error in Supabase call:", err);
+        error = err;
+      }
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error fetching applications:", error);
+        setApplicationsData([]);
+        return;
+      }
 
       // Filter applications for this scholarship with status pending
-      const applications = (allApplications || []).filter(
+      const filteredApplications = (applications || []).filter(
         app => app.scholarship_id === scholarshipId && app.status === 'pending'
       );
 
-      setApplicationsData(applications || []);
+      setApplicationsData(filteredApplications);
       setSelectedScholarship(scholarshipId);
     } catch (error) {
       console.error("Error fetching applications:", error);
+      setApplicationsData([]);
     }
   };
 
