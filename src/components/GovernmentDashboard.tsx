@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
@@ -29,10 +28,9 @@ export function GovernmentDashboard() {
       const client = getSupabaseClient();
       
       try {
-        // Fixed: Properly await the promise and access response
-        const applicationsResponse = await client
-          .from('applications')
-          .select('*');
+        // Create a query object first, then await its execution
+        const query = client.from('applications').select('*');
+        const applicationsResponse = await query;
         
         if (applicationsResponse.error) {
           console.error("Error fetching applications:", applicationsResponse.error);

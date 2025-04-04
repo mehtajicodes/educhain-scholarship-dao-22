@@ -1,4 +1,3 @@
-
 import { createClient } from '@supabase/supabase-js';
 import { Scholarship, ScholarshipStatus } from '@/types/dao';
 import { getSupabaseClient } from '@/integrations/supabase/client';
@@ -71,10 +70,9 @@ export const fetchScholarshipsData = async () => {
     // Fetch scholarships
     let scholarshipsData;
     try {
-      // Fixed: Properly await the promise and access response
-      const scholarshipsResponse = await client
-        .from('scholarships')
-        .select('*');
+      // Create a query object first, then await its execution
+      const query = client.from('scholarships').select('*');
+      const scholarshipsResponse = await query;
       
       if (scholarshipsResponse.error) {
         console.error("Error fetching scholarships:", scholarshipsResponse.error);
@@ -95,10 +93,9 @@ export const fetchScholarshipsData = async () => {
     // Fetch applications
     let applicationsData = [];
     try {
-      // Fixed: Properly await the promise and access response
-      const applicationsResponse = await client
-        .from('applications')
-        .select('*');
+      // Create a query object first, then await its execution
+      const query = client.from('applications').select('*');
+      const applicationsResponse = await query;
       
       if (applicationsResponse.error) {
         console.error("Error fetching applications:", applicationsResponse.error);
@@ -112,10 +109,9 @@ export const fetchScholarshipsData = async () => {
     // Fetch votes
     let votesData = [];
     try {
-      // Fixed: Properly await the promise and access response
-      const votesResponse = await client
-        .from('votes')
-        .select('*');
+      // Create a query object first, then await its execution
+      const query = client.from('votes').select('*');
+      const votesResponse = await query;
       
       if (votesResponse.error) {
         console.error("Error fetching votes:", votesResponse.error);
@@ -175,10 +171,9 @@ export const fetchUserApplications = async (address: string) => {
     const client = getSupabaseClient();
     
     try {
-      // Fixed: Properly await the promise and access response
-      const applicationsResponse = await client
-        .from('applications')
-        .select('*');
+      // Create a query object first, then await its execution
+      const query = client.from('applications').select('*');
+      const applicationsResponse = await query;
       
       if (applicationsResponse.error) {
         console.error("Error fetching applications:", applicationsResponse.error);
@@ -209,10 +204,9 @@ export const applyForScholarshipSafely = async (scholarshipId: string, address: 
     // Fetch all applications
     let existingApps = [];
     try {
-      // Fixed: Properly await the promise and access response
-      const applicationsResponse = await client
-        .from('applications')
-        .select('*');
+      // Create a query object first, then await its execution
+      const query = client.from('applications').select('*');
+      const applicationsResponse = await query;
       
       if (applicationsResponse.error) {
         console.error("Error checking existing applications:", applicationsResponse.error);
