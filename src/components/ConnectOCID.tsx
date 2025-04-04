@@ -7,8 +7,10 @@ import { useToast } from "@/hooks/use-toast";
 
 // Configure the OCID Connect SDK
 const ocidConfig = {
-  sandbox: true, // Set to false for production
-  redirectUrl: window.location.origin, // Redirect back to our app
+  opts: {
+    redirectUrl: window.location.origin, // Redirect back to our app
+  },
+  sandboxMode: true // Set to false for production
 };
 
 export function ConnectOCID() {
@@ -23,9 +25,15 @@ export function ConnectOCID() {
       if (window.location.search.includes('code=')) {
         setIsConnecting(true);
         try {
-          // Instantiate OCConnect inside the component effect
-          const ocidConnect = OCConnect(ocidConfig);
-          const result = await ocidConnect.handleRedirect();
+          // The OCConnect function returns a React component, but we need the instance methods
+          // We need to pass null as children, and the config properly structured
+          const ocidInstance = OCConnect({
+            children: null,
+            ...ocidConfig
+          });
+          
+          // Access the underlying instance's methods directly
+          const result = await ocidInstance.type.prototype.handleRedirect();
           
           if (result && result.profile) {
             setOcidProfile(result.profile);
@@ -72,9 +80,14 @@ export function ConnectOCID() {
   const handleConnect = async () => {
     setIsConnecting(true);
     try {
-      // Instantiate OCConnect properly - it's a function call, not a constructor
-      const ocidConnect = OCConnect(ocidConfig);
-      await ocidConnect.login();
+      // Create the OCConnect instance correctly
+      const ocidInstance = OCConnect({
+        children: null,
+        ...ocidConfig
+      });
+      
+      // Access the login method from the prototype
+      await ocidInstance.type.prototype.login();
     } catch (error) {
       console.error('Failed to initiate OCID login:', error);
       setIsConnecting(false);
