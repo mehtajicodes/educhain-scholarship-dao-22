@@ -40,19 +40,30 @@ export const useWallet = () => {
     if (!window.ethereum) return false;
 
     try {
-      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+      // Create the query
+      const chainIdQuery = window.ethereum.request({ method: 'eth_chainId' });
+      
+      // Now await the result
+      const chainId = await chainIdQuery;
+      
       if (chainId !== EDUCHAIN_CHAIN_ID) {
-        await window.ethereum.request({
+        const switchQuery = window.ethereum.request({
           method: 'wallet_switchEthereumChain',
           params: [{ chainId: EDUCHAIN_CHAIN_ID }],
-        }).catch(async (switchError: MetaMaskError) => {
+        });
+        
+        try {
+          await switchQuery;
+        } catch (switchError: any) {
           if (switchError.code === 4902) {
-            await window.ethereum.request({
+            const addChainQuery = window.ethereum.request({
               method: 'wallet_addEthereumChain',
               params: [EDUCHAIN_CONFIG],
             });
+            
+            await addChainQuery;
           }
-        });
+        }
       }
       return true;
     } catch (error) {
@@ -69,7 +80,8 @@ export const useWallet = () => {
       localStorage.setItem('wallet_address', walletAddress);
       
       // Use our improved authentication method
-      const { error } = await authenticateWithWallet(walletAddress);
+      const authQuery = authenticateWithWallet(walletAddress);
+      const { error } = await authQuery;
       
       if (error) {
         console.error("Authentication error:", error);
@@ -103,9 +115,11 @@ export const useWallet = () => {
         return;
       }
 
-      const accounts = await window.ethereum.request({
+      const accountsQuery = window.ethereum.request({
         method: 'eth_requestAccounts',
       });
+      
+      const accounts = await accountsQuery;
 
       const currentAddress = accounts[0];
       setAddress(currentAddress);
@@ -140,16 +154,20 @@ export const useWallet = () => {
 
   useEffect(() => {
     if (window.ethereum) {
-      window.ethereum.request({ method: 'eth_accounts' })
-        .then(async (accounts: string[]) => {
-          if (accounts.length > 0) {
-            setAddress(accounts[0]);
-            setIsConnected(true);
+      const getAccounts = async () => {
+        const accountsQuery = window.ethereum.request({ method: 'eth_accounts' });
+        const accounts = await accountsQuery;
+          
+        if (accounts.length > 0) {
+          setAddress(accounts[0]);
+          setIsConnected(true);
             
-            // Re-authenticate if wallet is already connected
-            await authenticateUser(accounts[0]);
-          }
-        });
+          // Re-authenticate if wallet is already connected
+          await authenticateUser(accounts[0]);
+        }
+      };
+      
+      getAccounts();
 
       window.ethereum.on('accountsChanged', async (accounts: string[]) => {
         if (accounts.length > 0) {

@@ -15,7 +15,7 @@ export function ConnectWallet() {
           <Button 
             variant="outline" 
             onClick={() => setShowDisconnect(!showDisconnect)}
-            className="bg-edu-light text-edu-primary border-edu-primary/20 hover:bg-edu-light/80"
+            className="bg-purple-50 text-purple-700 border-purple-300 hover:bg-purple-100"
           >
             <Shield className="mr-2 h-4 w-4" />
             <span className="font-mono">{formatAddress(address)}</span>
@@ -40,8 +40,7 @@ export function ConnectWallet() {
         <Button 
           onClick={connectWallet} 
           disabled={isLoading}
-          // className="bg-edu-primary hover:bg-edu-primary/90 text-white"
-          className="bg-purple-700 hover:to-purple-700/90 text-white"
+          className="bg-purple-700 hover:bg-purple-800 text-white"
         >
           <Unlock className="mr-2 h-4 w-4" />
           {isLoading ? "Connecting..." : "Connect Wallet"}
