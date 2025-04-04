@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -51,14 +50,14 @@ export function FinancierDashboard() {
       // Fetch all applications
       let applications;
       try {
-        const response = await client.from('applications').select('*');
+        const { data, error } = await client.from('applications').select('*');
         
-        if (response.error) {
-          console.error("Error fetching applications:", response.error);
+        if (error) {
+          console.error("Error fetching applications:", error);
           throw new Error("Failed to fetch applications");
         }
         
-        applications = response.data || [];
+        applications = data || [];
       } catch (error) {
         console.error("Error in Supabase call:", error);
         throw new Error("Database connection error");
