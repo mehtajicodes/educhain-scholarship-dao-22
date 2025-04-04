@@ -1,7 +1,5 @@
-
 import { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { OCConnect, useOCAuth } from '@opencampus/ocid-connect-js';
 import { User, Lock } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -28,10 +26,9 @@ export function ConnectOCID() {
       if (window.location.search.includes('code=')) {
         setIsConnecting(true);
         try {
-          // Use the useOCAuth hook directly
-          const ocAuth = await import('@opencampus/ocid-connect-js').then(module => 
-            new module.OCAuthSandbox(ocidConfig.opts)
-          );
+          // Use the OCAuthSandbox directly
+          const OCAuthSandbox = (await import('@opencampus/ocid-connect-js')).OCAuthSandbox;
+          const ocAuth = new OCAuthSandbox(ocidConfig.opts);
           
           if (ocAuth.handleLoginRedirect) {
             const result = await ocAuth.handleLoginRedirect();
@@ -83,12 +80,12 @@ export function ConnectOCID() {
     setIsConnecting(true);
     try {
       // Initialize the OCID SDK properly
-      const ocAuth = await import('@opencampus/ocid-connect-js').then(module => 
-        new module.OCAuthSandbox(ocidConfig.opts)
-      );
+      const OCAuthSandbox = (await import('@opencampus/ocid-connect-js')).OCAuthSandbox;
+      const ocAuth = new OCAuthSandbox(ocidConfig.opts);
       
       if (ocAuth.signInWithRedirect) {
-        await ocAuth.signInWithRedirect();
+        // Fix: Pass an empty object as required by the API
+        await ocAuth.signInWithRedirect({});
       } else {
         throw new Error("Login method not available");
       }
