@@ -13,15 +13,21 @@ const getAuthSdk = () => {
     referralCode: 'SCHOLARDAO', // Unique identifier for our app
   };
 
-  // Check if we're in production mode
+  // Use sandbox mode for development and testing
+  // In production, you would use OCAuthLive with a valid client ID
+  return new OCAuthSandbox(opts);
+  
+  // When you have a valid client ID for production, uncomment this:
+  /*
   if (process.env.NODE_ENV === 'production') {
     return new OCAuthLive({
       ...opts,
-      clientId: 'TbriK3jgar04y1H9w7M3kogCqHVOjtXa', // Replace with your actual client ID
+      clientId: 'YOUR_VALID_CLIENT_ID_HERE', // Replace with your actual client ID
     });
   } else {
     return new OCAuthSandbox(opts);
   }
+  */
 };
 
 export function ConnectOCID() {
