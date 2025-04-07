@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { useWallet } from '@/hooks/use-wallet';
-import { Shield, Unlock, Lock } from 'lucide-react';
+import { Shield, Unlock, Lock, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export function ConnectWallet() {
@@ -23,6 +23,11 @@ export function ConnectWallet() {
     }
   };
 
+  const handleDisconnectClick = () => {
+    disconnectWallet();
+    setShowDisconnect(false);
+  };
+
   return (
     <div className="flex items-center gap-2">
       {isConnected ? (
@@ -41,10 +46,7 @@ export function ConnectWallet() {
               variant="destructive"
               size="sm"
               className="absolute top-full mt-1 right-0 z-10"
-              onClick={() => {
-                disconnectWallet();
-                setShowDisconnect(false);
-              }}
+              onClick={handleDisconnectClick}
             >
               <Lock className="mr-2 h-3 w-3" />
               Disconnect
@@ -57,8 +59,17 @@ export function ConnectWallet() {
           disabled={isLoading}
           className="bg-purple-700 hover:bg-purple-800 text-white"
         >
-          <Unlock className="mr-2 h-4 w-4" />
-          {isLoading ? "Connecting..." : "Connect Wallet"}
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Connecting...
+            </>
+          ) : (
+            <>
+              <Unlock className="mr-2 h-4 w-4" />
+              Connect Wallet
+            </>
+          )}
         </Button>
       )}
     </div>
