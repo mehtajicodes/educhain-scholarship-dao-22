@@ -6,13 +6,13 @@ import type { Database } from '@/integrations/supabase/types';
 // Flag to track API connection status
 let isSupabaseAvailable = true;
 
-// Simple type for the function response - without nested generics
-interface SupabaseResponse<T> {
+// Simple response type without nested generics
+export interface SupabaseResponse<T> {
   data: T | null;
   error: any;
 }
 
-// Simplified Supabase call handling to avoid type recursion
+// Simple utility function for API calls
 export const safeSupabaseCall = async <T>(
   apiCall: () => Promise<any>, 
   fallbackData: T | null = null
@@ -29,7 +29,7 @@ export const safeSupabaseCall = async <T>(
   }
 };
 
-// Simplified query function with explicit return type
+// Utility function for direct query execution
 export const executeQuery = async (
   client: any,
   table: string,
@@ -47,7 +47,7 @@ export const executeQuery = async (
   }
 };
 
-// Execute an insert operation with simpler typing
+// Utility function for direct insert operation
 export const executeInsert = async (
   client: any,
   table: string,
@@ -65,7 +65,7 @@ export const executeInsert = async (
   }
 };
 
-// Execute an update operation with simpler typing
+// Utility function for direct update operation
 export const executeUpdate = async (
   client: any,
   table: string,
