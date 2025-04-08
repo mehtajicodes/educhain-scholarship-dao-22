@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -48,16 +49,20 @@ export function FinancierDashboard() {
     const client = getSupabaseClient();
 
     try {
+      // Initialize applications array with proper typing
       let applications: Application[] = [];
+      
       try {
-        const result = await executeQuery<Application>(client, 'applications');
+        // Use a simpler approach to fetch and type the applications
+        const result = await client.from('applications').select('*');
         
         if (result.error) {
           console.error("Error fetching applications:", result.error);
           throw new Error("Failed to fetch applications");
         }
         
-        applications = result.data || [];
+        // Explicitly cast the result to the Application type to avoid deep type instantiation
+        applications = (result.data || []) as Application[];
       } catch (error) {
         console.error("Error in Supabase call:", error);
         throw new Error("Database connection error");
@@ -85,12 +90,17 @@ export function FinancierDashboard() {
         applicationToFund = anyApplications[0];
         
         try {
-          await executeUpdate<Application>(client, 'applications', 
-            { status: 'approved' }, 
-            'id', 
-            applicationToFund.id
-          );
-          console.log("Application approved:", applicationToFund.id);
+          // Use a simpler approach to update application status
+          const { error } = await client
+            .from('applications')
+            .update({ status: 'approved' })
+            .eq('id', applicationToFund.id);
+            
+          if (error) {
+            console.error("Error updating application status:", error);
+          } else {
+            console.log("Application approved:", applicationToFund.id);
+          }
         } catch (error) {
           console.error("Error updating application status:", error);
         }
