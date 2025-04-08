@@ -27,4 +27,5 @@ export interface DAOContextType {
   loading: boolean;
   approveScholarship: (id: string, recipientAddress: string) => Promise<void>;
   fundScholarship: (id: string, applicationId: string) => Promise<void>;
+  fetchScholarships: () => Promise<void>;
 }
