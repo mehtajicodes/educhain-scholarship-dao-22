@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -24,7 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ethers } from "ethers";
 import { executeQuery, executeUpdate } from "@/utils/supabase-client";
 
-// Define Application interface explicitly to avoid type recursion
+// Define Application interface as a standalone type to avoid recursive type issues
 interface Application {
   id: string;
   scholarship_id: string;
@@ -59,16 +58,16 @@ export function FinancierDashboard() {
     try {
       let applications: Application[] = [];
       try {
-        // Fix the type issue by properly defining return type and handling the result
-        const { data, error } = await executeQuery<Application>(client, 'applications');
+        // Use a properly typed query approach
+        const result = await executeQuery<Application>(client, 'applications');
         
-        if (error) {
-          console.error("Error fetching applications:", error);
+        if (result.error) {
+          console.error("Error fetching applications:", result.error);
           throw new Error("Failed to fetch applications");
         }
         
-        // Ensure data is properly typed as Application[]
-        applications = data ? data as Application[] : [];
+        // Properly cast the data to Application[]
+        applications = result.data || [];
       } catch (error) {
         console.error("Error in Supabase call:", error);
         throw new Error("Database connection error");
@@ -96,7 +95,7 @@ export function FinancierDashboard() {
         applicationToFund = anyApplications[0];
         
         try {
-          await executeUpdate(client, 'applications', 
+          await executeUpdate<Application>(client, 'applications', 
             { status: 'approved' }, 
             'id', 
             applicationToFund.id

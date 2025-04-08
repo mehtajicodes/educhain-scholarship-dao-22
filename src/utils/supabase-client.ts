@@ -20,7 +20,7 @@ export const safeSupabaseCall = async <T>(
   }
 };
 
-// Get raw query result without chaining - updated with better typing
+// Get raw query result without chaining - updated with improved typing
 export const executeQuery = async <T>(
   client: any,
   table: string,
@@ -28,7 +28,7 @@ export const executeQuery = async <T>(
   options: Record<string, any> = {}
 ): Promise<{ data: T[] | null; error: any }> => {
   try {
-    // Execute the query directly to avoid TypeScript issues
+    // Execute the query directly with explicit return type to avoid type recursion
     const response = await client.from(table).select(query);
     return {
       data: response.data as T[] | null,
