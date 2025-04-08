@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -23,13 +24,14 @@ import { useToast } from "@/hooks/use-toast";
 import { ethers } from "ethers";
 import { executeQuery, executeUpdate } from "@/utils/supabase-client";
 
-type Application = {
+// Define Application interface explicitly to avoid type recursion
+interface Application {
   id: string;
   scholarship_id: string;
   applicant_address: string;
   status: string;
   created_at?: string;
-};
+}
 
 export function FinancierDashboard() {
   const { scholarships, fundScholarship, loading, fetchScholarships } = useDAO();
@@ -57,14 +59,16 @@ export function FinancierDashboard() {
     try {
       let applications: Application[] = [];
       try {
-        const { data, error } = await executeQuery<Application[]>(client, 'applications');
+        // Fix the type issue by properly defining return type and handling the result
+        const { data, error } = await executeQuery<Application>(client, 'applications');
         
         if (error) {
           console.error("Error fetching applications:", error);
           throw new Error("Failed to fetch applications");
         }
         
-        applications = data || [];
+        // Ensure data is properly typed as Application[]
+        applications = data ? data as Application[] : [];
       } catch (error) {
         console.error("Error in Supabase call:", error);
         throw new Error("Database connection error");

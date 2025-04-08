@@ -20,7 +20,7 @@ export const safeSupabaseCall = async <T>(
   }
 };
 
-// Get raw query result without chaining
+// Get raw query result without chaining - updated with better typing
 export const executeQuery = async <T>(
   client: any,
   table: string,
