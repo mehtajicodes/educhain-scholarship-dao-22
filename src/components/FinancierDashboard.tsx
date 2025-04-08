@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -22,7 +21,6 @@ import { useWallet } from "@/hooks/use-wallet";
 import { getSupabaseClient } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ethers } from "ethers";
-import { executeQuery, executeUpdate } from "@/utils/supabase-client";
 import { Application } from "@/types/dao";
 
 export function FinancierDashboard() {
@@ -49,20 +47,17 @@ export function FinancierDashboard() {
     const client = getSupabaseClient();
 
     try {
-      // Initialize applications array with proper typing
       let applications: Application[] = [];
       
       try {
-        // Use a simpler approach to fetch and type the applications
-        const result = await client.from('applications').select('*');
+        const { data, error } = await client.from('applications').select('*');
         
-        if (result.error) {
-          console.error("Error fetching applications:", result.error);
+        if (error) {
+          console.error("Error fetching applications:", error);
           throw new Error("Failed to fetch applications");
         }
         
-        // Explicitly cast the result to the Application type to avoid deep type instantiation
-        applications = (result.data || []) as Application[];
+        applications = (data || []) as Application[];
       } catch (error) {
         console.error("Error in Supabase call:", error);
         throw new Error("Database connection error");
@@ -90,7 +85,6 @@ export function FinancierDashboard() {
         applicationToFund = anyApplications[0];
         
         try {
-          // Use a simpler approach to update application status
           const { error } = await client
             .from('applications')
             .update({ status: 'approved' })
