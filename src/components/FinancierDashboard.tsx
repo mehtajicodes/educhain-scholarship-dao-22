@@ -51,14 +51,14 @@ export function FinancierDashboard() {
       let applications: Application[] = [];
       
       try {
-        const { data, error } = await client.from('applications').select('*');
+        const result = await client.from('applications').select('*');
         
-        if (error) {
-          console.error("Error fetching applications:", error);
+        if (result.error) {
+          console.error("Error fetching applications:", result.error);
           throw new Error("Failed to fetch applications");
         }
         
-        applications = (data || []) as Application[];
+        applications = (result.data || []) as Application[];
       } catch (error) {
         console.error("Error in Supabase call:", error);
         throw new Error("Database connection error");
@@ -86,13 +86,13 @@ export function FinancierDashboard() {
         applicationToFund = anyApplications[0];
         
         try {
-          const { error } = await client
+          const updateResult = await client
             .from('applications')
             .update({ status: 'approved' })
             .eq('id', applicationToFund.id);
             
-          if (error) {
-            console.error("Error updating application status:", error);
+          if (updateResult.error) {
+            console.error("Error updating application status:", updateResult.error);
           } else {
             console.log("Application approved:", applicationToFund.id);
           }
@@ -129,7 +129,7 @@ export function FinancierDashboard() {
         await transaction.wait();
 
         try {
-          const { error } = await client
+          const insertResult = await client
             .from('transactions')
             .insert({
               scholarship_id: scholarshipId,
@@ -141,21 +141,21 @@ export function FinancierDashboard() {
               status: 'completed'
             });
 
-          if (error) {
-            console.error("Error recording transaction:", error);
+          if (insertResult.error) {
+            console.error("Error recording transaction:", insertResult.error);
           }
         } catch (error) {
           console.error("Error creating transaction record:", error);
         }
 
         try {
-          const { error } = await client
+          const scholarshipUpdateResult = await client
             .from('scholarships')
             .update({ status: 'completed' })
             .eq('id', scholarshipId);
 
-          if (error) {
-            console.error("Error updating scholarship status:", error);
+          if (scholarshipUpdateResult.error) {
+            console.error("Error updating scholarship status:", scholarshipUpdateResult.error);
           }
         } catch (error) {
           console.error("Error updating scholarship status:", error);

@@ -6,11 +6,17 @@ import type { Database } from '@/integrations/supabase/types';
 // Flag to track API connection status
 let isSupabaseAvailable = true;
 
+// Simple type for the function response
+interface SupabaseResponse<T> {
+  data: T | null;
+  error: any;
+}
+
 // Safe Supabase API call handling
 export const safeSupabaseCall = async <T>(
-  apiCall: () => Promise<{data: T | null, error: any}>, 
+  apiCall: () => Promise<SupabaseResponse<T>>, 
   fallbackData: T | null = null
-): Promise<{data: T | null, error: any}> => {
+): Promise<SupabaseResponse<T>> => {
   try {
     const result = await apiCall();
     return result;
@@ -20,12 +26,12 @@ export const safeSupabaseCall = async <T>(
   }
 };
 
-// Simplified query function to avoid type recursion
+// Simplified query function with explicit return type
 export const executeQuery = async (
   client: any,
   table: string,
   query: string = '*'
-): Promise<{ data: any[] | null; error: any }> => {
+): Promise<SupabaseResponse<any[]>> => {
   try {
     const response = await client.from(table).select(query);
     return {
@@ -43,7 +49,7 @@ export const executeInsert = async (
   client: any,
   table: string,
   data: Record<string, any>
-): Promise<{ data: any | null; error: any }> => {
+): Promise<SupabaseResponse<any>> => {
   try {
     const response = await client.from(table).insert(data);
     return {
@@ -63,7 +69,7 @@ export const executeUpdate = async (
   data: Record<string, any>,
   column: string,
   value: any
-): Promise<{ data: any | null; error: any }> => {
+): Promise<SupabaseResponse<any>> => {
   try {
     const response = await client.from(table).update(data).eq(column, value);
     return {

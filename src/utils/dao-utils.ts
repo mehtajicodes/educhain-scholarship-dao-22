@@ -2,7 +2,6 @@
 import { Scholarship, ScholarshipStatus } from '@/types/dao';
 import { getSupabaseClient } from '@/integrations/supabase/client';
 import { MOCK_SCHOLARSHIPS } from './mock-data';
-import { executeQuery, executeInsert, executeUpdate } from './supabase-client';
 
 export const fetchScholarshipsData = async (): Promise<Scholarship[]> => {
   try {
@@ -12,13 +11,13 @@ export const fetchScholarshipsData = async (): Promise<Scholarship[]> => {
     // Fetch scholarships
     let scholarshipsData;
     try {
-      const { data, error } = await executeQuery(client, 'scholarships');
+      const result = await client.from('scholarships').select('*');
       
-      if (error) {
-        console.error("Error fetching scholarships:", error);
+      if (result.error) {
+        console.error("Error fetching scholarships:", result.error);
         return MOCK_SCHOLARSHIPS;
       }
-      scholarshipsData = data;
+      scholarshipsData = result.data;
     } catch (error) {
       console.error("Error in Supabase call:", error);
       return MOCK_SCHOLARSHIPS;
@@ -33,12 +32,12 @@ export const fetchScholarshipsData = async (): Promise<Scholarship[]> => {
     // Fetch applications
     let applicationsData = [];
     try {
-      const { data, error } = await executeQuery(client, 'applications');
+      const result = await client.from('applications').select('*');
       
-      if (error) {
-        console.error("Error fetching applications:", error);
+      if (result.error) {
+        console.error("Error fetching applications:", result.error);
       } else {
-        applicationsData = data || [];
+        applicationsData = result.data || [];
       }
     } catch (error) {
       console.error("Error in Supabase applications call:", error);
@@ -47,12 +46,12 @@ export const fetchScholarshipsData = async (): Promise<Scholarship[]> => {
     // Fetch votes
     let votesData = [];
     try {
-      const { data, error } = await executeQuery(client, 'votes');
+      const result = await client.from('votes').select('*');
       
-      if (error) {
-        console.error("Error fetching votes:", error);
+      if (result.error) {
+        console.error("Error fetching votes:", result.error);
       } else {
-        votesData = data || [];
+        votesData = result.data || [];
       }
     } catch (error) {
       console.error("Error in Supabase votes call:", error);
@@ -107,15 +106,15 @@ export const fetchUserApplications = async (address: string): Promise<any[]> => 
     const client = getSupabaseClient();
     
     try {
-      const { data, error } = await executeQuery(client, 'applications');
+      const result = await client.from('applications').select('*');
       
-      if (error) {
-        console.error("Error fetching applications:", error);
+      if (result.error) {
+        console.error("Error fetching applications:", result.error);
         return [];
       }
       
       // Filter applications by applicant address
-      return (data || []).filter((app: any) => app.applicant_address === address);
+      return (result.data || []).filter((app: any) => app.applicant_address === address);
     } catch (error) {
       console.error("Error in Supabase call:", error);
       return [];
@@ -138,14 +137,14 @@ export const applyForScholarshipSafely = async (scholarshipId: string, address: 
     // Fetch all applications
     let existingApps = [];
     try {
-      const { data, error } = await executeQuery(client, 'applications');
+      const result = await client.from('applications').select('*');
       
-      if (error) {
-        console.error("Error checking existing applications:", error);
+      if (result.error) {
+        console.error("Error checking existing applications:", result.error);
         // If we can't check, assume no existing application and try to create one
       } else {
         // Filter applications locally
-        existingApps = (data || []).filter(
+        existingApps = (result.data || []).filter(
           (app: any) => app.scholarship_id === scholarshipId && app.applicant_address === address
         );
         
@@ -160,14 +159,14 @@ export const applyForScholarshipSafely = async (scholarshipId: string, address: 
     
     // Insert new application
     try {
-      const { error } = await executeInsert(client, 'applications', {
+      const result = await client.from('applications').insert({
         scholarship_id: scholarshipId,
         applicant_address: address,
       });
       
-      if (error) {
-        console.error("Error applying for scholarship:", error);
-        return { success: false, error: error.message || "Failed to apply" };
+      if (result.error) {
+        console.error("Error applying for scholarship:", result.error);
+        return { success: false, error: result.error.message || "Failed to apply" };
       }
       
       return { success: true, error: null };
