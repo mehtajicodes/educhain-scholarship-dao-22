@@ -13,10 +13,18 @@ import { AnonAadhaarProvider } from "./contexts/AnonAadhaarContext";
 import { DAOProvider } from "./contexts/DAOContext";
 import Footer from "./components/Footer";
 import { Header } from "./components/Header";
+import { OCConnect } from '@opencampus/ocid-connect-js';
 
 const queryClient = new QueryClient();
 
+const opts = {
+  clientId: '<Does_Not_Matter_For_Sandbox_mode>',
+  redirectUri: 'http://localhost:8080/',
+  referralCode: 'PARTNER6'
+}
+
 const App = () => (
+
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <AnonAadhaarProvider>
@@ -25,6 +33,7 @@ const App = () => (
           <Sonner />
           <BrowserRouter>
           <Header />
+          <OCConnect opts={opts} sandboxMode={true}>
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/scholarships" element={<Scholarships />} />
@@ -32,6 +41,7 @@ const App = () => (
               <Route path="/about" element={<About />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </OCConnect>
           <Footer />
           </BrowserRouter>
         </DAOProvider>
