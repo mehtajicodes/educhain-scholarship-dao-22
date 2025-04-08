@@ -22,15 +22,7 @@ import { getSupabaseClient } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ethers } from "ethers";
 import { executeQuery, executeUpdate } from "@/utils/supabase-client";
-
-// Define Application interface as a standalone type to avoid recursive type issues
-interface Application {
-  id: string;
-  scholarship_id: string;
-  applicant_address: string;
-  status: string;
-  created_at?: string;
-}
+import { Application } from "@/types/dao";
 
 export function FinancierDashboard() {
   const { scholarships, fundScholarship, loading, fetchScholarships } = useDAO();
@@ -58,7 +50,6 @@ export function FinancierDashboard() {
     try {
       let applications: Application[] = [];
       try {
-        // Use a properly typed query approach
         const result = await executeQuery<Application>(client, 'applications');
         
         if (result.error) {
@@ -66,7 +57,6 @@ export function FinancierDashboard() {
           throw new Error("Failed to fetch applications");
         }
         
-        // Properly cast the data to Application[]
         applications = result.data || [];
       } catch (error) {
         console.error("Error in Supabase call:", error);
