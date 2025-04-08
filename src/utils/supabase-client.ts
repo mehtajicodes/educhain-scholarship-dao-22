@@ -12,14 +12,17 @@ interface SupabaseResponse<T> {
   error: any;
 }
 
-// Safe Supabase API call handling
+// Safe Supabase API call handling - simplifying to avoid recursive types
 export const safeSupabaseCall = async <T>(
-  apiCall: () => Promise<SupabaseResponse<T>>, 
+  apiCall: () => Promise<any>, 
   fallbackData: T | null = null
 ): Promise<SupabaseResponse<T>> => {
   try {
     const result = await apiCall();
-    return result;
+    return { 
+      data: result.data as T,
+      error: result.error 
+    };
   } catch (error) {
     console.error("Supabase API call failed:", error);
     return { data: fallbackData, error };

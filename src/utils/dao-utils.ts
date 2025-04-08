@@ -8,7 +8,7 @@ export const fetchScholarshipsData = async (): Promise<Scholarship[]> => {
     console.log("Fetching scholarships data...");
     const client = getSupabaseClient();
     
-    // Fetch scholarships
+    // Fetch scholarships directly using the client
     let scholarshipsData;
     try {
       const result = await client.from('scholarships').select('*');
@@ -29,7 +29,7 @@ export const fetchScholarshipsData = async (): Promise<Scholarship[]> => {
       return MOCK_SCHOLARSHIPS;
     }
 
-    // Fetch applications
+    // Fetch applications directly
     let applicationsData = [];
     try {
       const result = await client.from('applications').select('*');
@@ -43,7 +43,7 @@ export const fetchScholarshipsData = async (): Promise<Scholarship[]> => {
       console.error("Error in Supabase applications call:", error);
     }
     
-    // Fetch votes
+    // Fetch votes directly
     let votesData = [];
     try {
       const result = await client.from('votes').select('*');
@@ -98,7 +98,7 @@ export const fetchScholarshipsData = async (): Promise<Scholarship[]> => {
   }
 };
 
-// Helper function to safely fetch applications
+// Helper function to safely fetch applications - using direct client calls
 export const fetchUserApplications = async (address: string): Promise<any[]> => {
   if (!address) return [];
   
@@ -125,7 +125,7 @@ export const fetchUserApplications = async (address: string): Promise<any[]> => 
   }
 };
 
-// Helper function to safely apply for scholarship
+// Helper function to safely apply for scholarship - using direct client calls
 export const applyForScholarshipSafely = async (scholarshipId: string, address: string): Promise<{ success: boolean; error: string | null; existing?: boolean }> => {
   if (!address || !scholarshipId) {
     return { success: false, error: "Missing required information" };
