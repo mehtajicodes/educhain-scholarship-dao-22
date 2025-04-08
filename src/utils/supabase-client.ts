@@ -20,18 +20,15 @@ export const safeSupabaseCall = async <T>(
   }
 };
 
-// Simplified query function to avoid type recursion
+// Direct query function without type recursion
 export const executeQuery = async <T>(
   client: any,
   table: string,
-  query: string = '*',
-  options: Record<string, any> = {}
+  query: string = '*'
 ): Promise<{ data: T[] | null; error: any }> => {
   try {
-    // Use a direct approach without type complexity
     const response = await client.from(table).select(query);
     
-    // Create a simple return type to avoid deep instantiation
     return {
       data: response.data as T[] | null,
       error: response.error

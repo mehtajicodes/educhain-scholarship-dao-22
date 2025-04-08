@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -50,14 +51,16 @@ export function FinancierDashboard() {
       let applications: Application[] = [];
       
       try {
-        const { data, error } = await client.from('applications').select('*');
+        // Use a more direct approach to fetch applications
+        const response = await client.from('applications').select('*');
         
-        if (error) {
-          console.error("Error fetching applications:", error);
+        if (response.error) {
+          console.error("Error fetching applications:", response.error);
           throw new Error("Failed to fetch applications");
         }
         
-        applications = (data || []) as Application[];
+        // Explicitly cast the result data
+        applications = (response.data || []) as Application[];
       } catch (error) {
         console.error("Error in Supabase call:", error);
         throw new Error("Database connection error");
@@ -85,13 +88,14 @@ export function FinancierDashboard() {
         applicationToFund = anyApplications[0];
         
         try {
-          const { error } = await client
+          // Update application status directly
+          const updateResponse = await client
             .from('applications')
             .update({ status: 'approved' })
             .eq('id', applicationToFund.id);
             
-          if (error) {
-            console.error("Error updating application status:", error);
+          if (updateResponse.error) {
+            console.error("Error updating application status:", updateResponse.error);
           } else {
             console.log("Application approved:", applicationToFund.id);
           }
@@ -128,7 +132,7 @@ export function FinancierDashboard() {
         await transaction.wait();
 
         try {
-          const { error: transactionError } = await client
+          const transactionResponse = await client
             .from('transactions')
             .insert({
               scholarship_id: scholarshipId,
@@ -140,21 +144,21 @@ export function FinancierDashboard() {
               status: 'completed'
             });
 
-          if (transactionError) {
-            console.error("Error recording transaction:", transactionError);
+          if (transactionResponse.error) {
+            console.error("Error recording transaction:", transactionResponse.error);
           }
         } catch (error) {
           console.error("Error creating transaction record:", error);
         }
 
         try {
-          const { error: updateError } = await client
+          const updateResponse = await client
             .from('scholarships')
             .update({ status: 'completed' })
             .eq('id', scholarshipId);
 
-          if (updateError) {
-            console.error("Error updating scholarship status:", updateError);
+          if (updateResponse.error) {
+            console.error("Error updating scholarship status:", updateResponse.error);
           }
         } catch (error) {
           console.error("Error updating scholarship status:", error);
