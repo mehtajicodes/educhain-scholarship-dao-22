@@ -23,6 +23,7 @@ import { getSupabaseClient } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ethers } from "ethers";
 import { Application } from "@/types/dao";
+import { Tables } from "@/integrations/supabase/types";
 
 export function FinancierDashboard() {
   const { scholarships, fundScholarship, loading, fetchScholarships } = useDAO();
@@ -51,7 +52,7 @@ export function FinancierDashboard() {
       let applications: Application[] = [];
       
       try {
-        // Use a more direct approach to fetch applications
+        // Direct approach with simpler typing
         const response = await client.from('applications').select('*');
         
         if (response.error) {
@@ -59,7 +60,7 @@ export function FinancierDashboard() {
           throw new Error("Failed to fetch applications");
         }
         
-        // Explicitly cast the result data
+        // Explicitly cast the response data to the Application type
         applications = (response.data || []) as Application[];
       } catch (error) {
         console.error("Error in Supabase call:", error);
@@ -88,14 +89,14 @@ export function FinancierDashboard() {
         applicationToFund = anyApplications[0];
         
         try {
-          // Update application status directly
-          const updateResponse = await client
+          // Direct update without using executeUpdate
+          const updateResult = await client
             .from('applications')
             .update({ status: 'approved' })
             .eq('id', applicationToFund.id);
             
-          if (updateResponse.error) {
-            console.error("Error updating application status:", updateResponse.error);
+          if (updateResult.error) {
+            console.error("Error updating application status:", updateResult.error);
           } else {
             console.log("Application approved:", applicationToFund.id);
           }
@@ -132,7 +133,8 @@ export function FinancierDashboard() {
         await transaction.wait();
 
         try {
-          const transactionResponse = await client
+          // Direct insert without using executeInsert
+          const transactionResult = await client
             .from('transactions')
             .insert({
               scholarship_id: scholarshipId,
@@ -144,21 +146,22 @@ export function FinancierDashboard() {
               status: 'completed'
             });
 
-          if (transactionResponse.error) {
-            console.error("Error recording transaction:", transactionResponse.error);
+          if (transactionResult.error) {
+            console.error("Error recording transaction:", transactionResult.error);
           }
         } catch (error) {
           console.error("Error creating transaction record:", error);
         }
 
         try {
-          const updateResponse = await client
+          // Direct update without using executeUpdate
+          const updateResult = await client
             .from('scholarships')
             .update({ status: 'completed' })
             .eq('id', scholarshipId);
 
-          if (updateResponse.error) {
-            console.error("Error updating scholarship status:", updateResponse.error);
+          if (updateResult.error) {
+            console.error("Error updating scholarship status:", updateResult.error);
           }
         } catch (error) {
           console.error("Error updating scholarship status:", error);

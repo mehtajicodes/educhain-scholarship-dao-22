@@ -20,15 +20,14 @@ export const safeSupabaseCall = async <T>(
   }
 };
 
-// Direct query function without type recursion
-export const executeQuery = async <T>(
+// Direct query function with simplified types
+export const executeQuery = async <T = any>(
   client: any,
   table: string,
   query: string = '*'
 ): Promise<{ data: T[] | null; error: any }> => {
   try {
     const response = await client.from(table).select(query);
-    
     return {
       data: response.data as T[] | null,
       error: response.error
@@ -39,8 +38,8 @@ export const executeQuery = async <T>(
   }
 };
 
-// Execute an insert operation
-export const executeInsert = async <T>(
+// Execute an insert operation with simplified return type
+export const executeInsert = async <T = any>(
   client: any,
   table: string,
   data: Record<string, any>
@@ -57,8 +56,8 @@ export const executeInsert = async <T>(
   }
 };
 
-// Execute an update operation
-export const executeUpdate = async <T>(
+// Execute an update operation with simplified return type
+export const executeUpdate = async <T = any>(
   client: any,
   table: string,
   data: Record<string, any>,
