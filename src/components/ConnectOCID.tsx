@@ -9,7 +9,8 @@ import { OCAuthSandbox, OCAuthLive } from '@opencampus/ocid-connect-js';
 // Initialize the auth SDK based on environment
 const getAuthSdk = () => {
   const opts = {
-    redirectUri: window.location.origin, // Redirect back to our app
+    redirectUri: "http://localhost:8080/", // Redirect back to our app
+    // redirectUri: window.location.origin, // Redirect back to our app
     referralCode: 'SCHOLARDAO', // Unique identifier for our app
   };
 
