@@ -12,15 +12,15 @@ export interface SupabaseResponse<T> {
   error: any;
 }
 
-// Simple utility function for API calls
+// Direct utility function for API calls - no chaining that could cause type recursion
 export const safeSupabaseCall = async <T>(
-  apiCall: () => Promise<any>, 
+  apiCall: () => Promise<{ data: T | null; error: any }>, 
   fallbackData: T | null = null
 ): Promise<SupabaseResponse<T>> => {
   try {
     const result = await apiCall();
     return { 
-      data: result.data as T,
+      data: result.data,
       error: result.error 
     };
   } catch (error) {
