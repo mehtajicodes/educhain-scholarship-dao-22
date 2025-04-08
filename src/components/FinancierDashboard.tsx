@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import {
   Card,
@@ -24,6 +23,14 @@ import { useToast } from "@/hooks/use-toast";
 import { ethers } from "ethers";
 import { executeQuery, executeUpdate } from "@/utils/supabase-client";
 
+type Application = {
+  id: string;
+  scholarship_id: string;
+  applicant_address: string;
+  status: string;
+  created_at?: string;
+};
+
 export function FinancierDashboard() {
   const { scholarships, fundScholarship, loading, fetchScholarships } = useDAO();
   const { address, isAuthenticated } = useWallet();
@@ -48,10 +55,9 @@ export function FinancierDashboard() {
     const client = getSupabaseClient();
 
     try {
-      // Fetch applications for this scholarship
-      let applications: any[] = [];
+      let applications: Application[] = [];
       try {
-        const { data, error } = await executeQuery(client, 'applications');
+        const { data, error } = await executeQuery<Application[]>(client, 'applications');
         
         if (error) {
           console.error("Error fetching applications:", error);
@@ -67,28 +73,24 @@ export function FinancierDashboard() {
       setLoadingApplications(false);
 
       const approvedApplications = applications.filter(
-        (app: any) => app.scholarship_id === scholarshipId && app.status === 'approved'
+        (app) => app.scholarship_id === scholarshipId && app.status === 'approved'
       );
 
-      let applicationToFund;
+      let applicationToFund: Application | undefined;
       
-      // First check for approved applications
       if (approvedApplications && approvedApplications.length > 0) {
         applicationToFund = approvedApplications[0];
       } else {
-        // If no approved applications, look for any application for this scholarship
         const anyApplications = applications.filter(
-          (app: any) => app.scholarship_id === scholarshipId
+          (app) => app.scholarship_id === scholarshipId
         );
 
         if (!anyApplications || anyApplications.length === 0) {
           throw new Error("No application found for this scholarship");
         }
 
-        // Approve the first application we find
         applicationToFund = anyApplications[0];
         
-        // Update application status to approved
         try {
           await executeUpdate(client, 'applications', 
             { status: 'approved' }, 
@@ -98,7 +100,6 @@ export function FinancierDashboard() {
           console.log("Application approved:", applicationToFund.id);
         } catch (error) {
           console.error("Error updating application status:", error);
-          // Continue with funding even if status update fails
         }
       }
 
@@ -111,7 +112,6 @@ export function FinancierDashboard() {
         throw new Error("Scholarship not found");
       }
 
-      // Process payment if MetaMask is available
       if (window.ethereum) {
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         const signer = provider.getSigner();
@@ -130,7 +130,6 @@ export function FinancierDashboard() {
 
         await transaction.wait();
 
-        // Create transaction record in database
         try {
           const { error: transactionError } = await client
             .from('transactions')
@@ -140,19 +139,17 @@ export function FinancierDashboard() {
               financier_address: address,
               recipient_address: applicationToFund.applicant_address,
               amount: scholarship.amount,
-              transaction_hash: transaction.hash
+              transaction_hash: transaction.hash,
+              status: 'completed'
             });
 
           if (transactionError) {
             console.error("Error recording transaction:", transactionError);
-            // Continue even if transaction recording fails
           }
         } catch (error) {
           console.error("Error creating transaction record:", error);
-          // Continue even if transaction recording fails
         }
 
-        // Update scholarship status to completed
         try {
           const { error: updateError } = await client
             .from('scholarships')
@@ -166,10 +163,7 @@ export function FinancierDashboard() {
           console.error("Error updating scholarship status:", error);
         }
 
-        // Call the fundScholarship method from context to update the UI
         await fundScholarship(scholarshipId, applicationToFund.id);
-        
-        // Force refresh of scholarships data
         fetchScholarships();
 
         toast({

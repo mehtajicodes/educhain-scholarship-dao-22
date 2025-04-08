@@ -31,7 +31,7 @@ export const executeQuery = async <T>(
     // Execute the query directly to avoid TypeScript issues
     const response = await client.from(table).select(query);
     return {
-      data: response.data,
+      data: response.data as T[] | null,
       error: response.error
     };
   } catch (error) {
@@ -49,7 +49,7 @@ export const executeInsert = async <T>(
   try {
     const response = await client.from(table).insert(data);
     return {
-      data: response.data,
+      data: response.data as T | null,
       error: response.error
     };
   } catch (error) {
@@ -69,7 +69,7 @@ export const executeUpdate = async <T>(
   try {
     const response = await client.from(table).update(data).eq(column, value);
     return {
-      data: response.data,
+      data: response.data as T | null,
       error: response.error
     };
   } catch (error) {
