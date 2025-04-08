@@ -20,16 +20,16 @@ export const safeSupabaseCall = async <T>(
   }
 };
 
-// Direct query function with simplified types
-export const executeQuery = async <T = any>(
+// Simplified query function to avoid type recursion
+export const executeQuery = async (
   client: any,
   table: string,
   query: string = '*'
-): Promise<{ data: T[] | null; error: any }> => {
+): Promise<{ data: any[] | null; error: any }> => {
   try {
     const response = await client.from(table).select(query);
     return {
-      data: response.data as T[] | null,
+      data: response.data,
       error: response.error
     };
   } catch (error) {
@@ -38,16 +38,16 @@ export const executeQuery = async <T = any>(
   }
 };
 
-// Execute an insert operation with simplified return type
-export const executeInsert = async <T = any>(
+// Execute an insert operation with simpler typing
+export const executeInsert = async (
   client: any,
   table: string,
   data: Record<string, any>
-): Promise<{ data: T | null; error: any }> => {
+): Promise<{ data: any | null; error: any }> => {
   try {
     const response = await client.from(table).insert(data);
     return {
-      data: response.data as T | null,
+      data: response.data,
       error: response.error
     };
   } catch (error) {
@@ -56,18 +56,18 @@ export const executeInsert = async <T = any>(
   }
 };
 
-// Execute an update operation with simplified return type
-export const executeUpdate = async <T = any>(
+// Execute an update operation with simpler typing
+export const executeUpdate = async (
   client: any,
   table: string,
   data: Record<string, any>,
   column: string,
   value: any
-): Promise<{ data: T | null; error: any }> => {
+): Promise<{ data: any | null; error: any }> => {
   try {
     const response = await client.from(table).update(data).eq(column, value);
     return {
-      data: response.data as T | null,
+      data: response.data,
       error: response.error
     };
   } catch (error) {
