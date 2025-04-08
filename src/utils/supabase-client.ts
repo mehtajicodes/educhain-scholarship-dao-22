@@ -6,13 +6,13 @@ import type { Database } from '@/integrations/supabase/types';
 // Flag to track API connection status
 let isSupabaseAvailable = true;
 
-// Simple type for the function response
+// Simple type for the function response - without nested generics
 interface SupabaseResponse<T> {
   data: T | null;
   error: any;
 }
 
-// Safe Supabase API call handling - simplifying to avoid recursive types
+// Simplified Supabase call handling to avoid type recursion
 export const safeSupabaseCall = async <T>(
   apiCall: () => Promise<any>, 
   fallbackData: T | null = null
