@@ -12,6 +12,7 @@ export const fetchScholarshipsData = async (): Promise<Scholarship[]> => {
     let scholarshipsData: any[] = [];
     
     try {
+      // Direct call without using utility functions that might cause type recursion
       const response = await client.from('scholarships').select('*');
       
       if (response.error) {
@@ -34,6 +35,7 @@ export const fetchScholarshipsData = async (): Promise<Scholarship[]> => {
     // Fetch applications directly
     let applicationsData: any[] = [];
     try {
+      // Direct call without utility function
       const response = await client.from('applications').select('*');
       
       if (response.error) {
@@ -48,6 +50,7 @@ export const fetchScholarshipsData = async (): Promise<Scholarship[]> => {
     // Fetch votes directly
     let votesData: any[] = [];
     try {
+      // Direct call without utility function
       const response = await client.from('votes').select('*');
       
       if (response.error) {
@@ -108,6 +111,7 @@ export const fetchUserApplications = async (address: string): Promise<any[]> => 
     const client = getSupabaseClient();
     
     try {
+      // Direct call without utility functions
       const response = await client.from('applications').select('*');
       
       if (response.error) {
@@ -139,6 +143,7 @@ export const applyForScholarshipSafely = async (scholarshipId: string, address: 
     // Fetch all applications
     let existingApps = [];
     try {
+      // Direct call without utility functions
       const response = await client.from('applications').select('*');
       
       if (response.error) {
@@ -161,6 +166,7 @@ export const applyForScholarshipSafely = async (scholarshipId: string, address: 
     
     // Insert new application
     try {
+      // Direct call without utility functions
       const response = await client.from('applications').insert({
         scholarship_id: scholarshipId,
         applicant_address: address,

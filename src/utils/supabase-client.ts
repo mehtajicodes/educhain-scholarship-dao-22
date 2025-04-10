@@ -6,7 +6,7 @@ import type { Database } from '@/integrations/supabase/types';
 // Flag to track API connection status
 let isSupabaseAvailable = true;
 
-// Simple response type without nested generics
+// Create a simple, direct response type without nested generics
 export interface SupabaseResponse<T> {
   data: T | null;
   error: any;
