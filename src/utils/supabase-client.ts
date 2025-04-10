@@ -6,32 +6,23 @@ import type { Database } from '@/integrations/supabase/types';
 // Flag to track API connection status
 let isSupabaseAvailable = true;
 
-// Safe Supabase API call handling
-export const safeSupabaseCall = async <T>(
-  apiCall: () => Promise<{data: T | null, error: any}>, 
-  fallbackData: T | null = null
-): Promise<{data: T | null, error: any}> => {
-  try {
-    const result = await apiCall();
-    return result;
-  } catch (error) {
-    console.error("Supabase API call failed:", error);
-    return { data: fallbackData, error };
-  }
-};
+// Define a simple response type to avoid recursive type issues
+export interface SupabaseResponse<T> {
+  data: T | null;
+  error: any;
+}
 
-// Direct query function without type recursion
+// Direct query function with simplified return type
 export const executeQuery = async <T>(
   client: any,
   table: string,
   query: string = '*'
-): Promise<{ data: T[] | null; error: any }> => {
+): Promise<SupabaseResponse<T[]>> => {
   try {
-    const response = await client.from(table).select(query);
-    
+    const result = await client.from(table).select(query);
     return {
-      data: response.data as T[] | null,
-      error: response.error
+      data: result.data as T[] | null,
+      error: result.error
     };
   } catch (error) {
     console.error(`Error executing query on ${table}:`, error);
@@ -39,17 +30,17 @@ export const executeQuery = async <T>(
   }
 };
 
-// Execute an insert operation
+// Execute an insert operation with simplified return type
 export const executeInsert = async <T>(
   client: any,
   table: string,
   data: Record<string, any>
-): Promise<{ data: T | null; error: any }> => {
+): Promise<SupabaseResponse<T>> => {
   try {
-    const response = await client.from(table).insert(data);
+    const result = await client.from(table).insert(data);
     return {
-      data: response.data as T | null,
-      error: response.error
+      data: result.data as T | null,
+      error: result.error
     };
   } catch (error) {
     console.error(`Error inserting into ${table}:`, error);
@@ -57,19 +48,19 @@ export const executeInsert = async <T>(
   }
 };
 
-// Execute an update operation
+// Execute an update operation with simplified return type
 export const executeUpdate = async <T>(
   client: any,
   table: string,
   data: Record<string, any>,
   column: string,
   value: any
-): Promise<{ data: T | null; error: any }> => {
+): Promise<SupabaseResponse<T>> => {
   try {
-    const response = await client.from(table).update(data).eq(column, value);
+    const result = await client.from(table).update(data).eq(column, value);
     return {
-      data: response.data as T | null,
-      error: response.error
+      data: result.data as T | null,
+      error: result.error
     };
   } catch (error) {
     console.error(`Error updating ${table}:`, error);
