@@ -6,7 +6,7 @@ import type { Database } from '@/integrations/supabase/types';
 // Flag to track API connection status
 let isSupabaseAvailable = true;
 
-// Define a simple response type to avoid recursive type issues
+// Simplified response type to avoid recursion
 export interface SupabaseResponse<T> {
   data: T | null;
   error: any;
@@ -19,11 +19,8 @@ export const executeQuery = async <T>(
   query: string = '*'
 ): Promise<SupabaseResponse<T[]>> => {
   try {
-    const result = await client.from(table).select(query);
-    return {
-      data: result.data as T[] | null,
-      error: result.error
-    };
+    const { data, error } = await client.from(table).select(query);
+    return { data: data as T[] | null, error };
   } catch (error) {
     console.error(`Error executing query on ${table}:`, error);
     return { data: null, error };
@@ -37,11 +34,8 @@ export const executeInsert = async <T>(
   data: Record<string, any>
 ): Promise<SupabaseResponse<T>> => {
   try {
-    const result = await client.from(table).insert(data);
-    return {
-      data: result.data as T | null,
-      error: result.error
-    };
+    const { data: resultData, error } = await client.from(table).insert(data).select();
+    return { data: resultData?.[0] as T | null, error };
   } catch (error) {
     console.error(`Error inserting into ${table}:`, error);
     return { data: null, error };
@@ -57,11 +51,8 @@ export const executeUpdate = async <T>(
   value: any
 ): Promise<SupabaseResponse<T>> => {
   try {
-    const result = await client.from(table).update(data).eq(column, value);
-    return {
-      data: result.data as T | null,
-      error: result.error
-    };
+    const { data: resultData, error } = await client.from(table).update(data).eq(column, value).select();
+    return { data: resultData?.[0] as T | null, error };
   } catch (error) {
     console.error(`Error updating ${table}:`, error);
     return { data: null, error };

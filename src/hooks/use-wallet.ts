@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, authenticateWithWallet, getAuthenticatedWallet } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -23,20 +22,7 @@ declare global {
   }
 }
 
-// Convert chain ID to hexadecimal to ensure proper format
-// const EDUCHAIN_CHAIN_ID = '656476'; // Hexadecimal format for chain ID
-// const EDUCHAIN_CONFIG = {
-//   chainId: EDUCHAIN_CHAIN_ID,
-//   chainName: 'EDU Chain Testnet',
-//   nativeCurrency: {
-//     name: 'EduChain Ether',
-//     symbol: 'EDU',
-//     decimals: 18,
-//   },
-//   rpcUrls: ['https://rpc.open-campus-codex.gelato.digital'],
-//   // rpcUrls: ['https://open-campus-codex-sepolia.drpc.org'],
-//   blockExplorerUrls: ['https://opencampus-codex.blockscout.com/'],
-// };
+// Chain ID for EduChain Testnet
 const EDUCHAIN_CHAIN_ID = '0xA0A8';
 const EDUCHAIN_CONFIG = {
   chainId: EDUCHAIN_CHAIN_ID,
@@ -55,6 +41,7 @@ export const useWallet = () => {
   const [address, setAddress] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [networkError, setNetworkError] = useState(false);
   const { toast } = useToast();
 
   // Check if an address is already stored in localStorage
@@ -81,6 +68,7 @@ export const useWallet = () => {
             method: 'wallet_switchEthereumChain',
             params: [{ chainId: EDUCHAIN_CHAIN_ID }],
           });
+          setNetworkError(false);
           return true;
         } catch (switchError: any) {
           // If the chain is not added to MetaMask, add it
@@ -90,6 +78,7 @@ export const useWallet = () => {
                 method: 'wallet_addEthereumChain',
                 params: [EDUCHAIN_CONFIG],
               });
+              setNetworkError(false);
               return true;
             } catch (addError) {
               console.error("Error adding network:", addError);
@@ -98,6 +87,7 @@ export const useWallet = () => {
                 description: "Could not add the EduChain network to your wallet.",
                 variant: "destructive",
               });
+              setNetworkError(true);
               return false;
             }
           } else {
@@ -107,10 +97,12 @@ export const useWallet = () => {
               description: "Please switch to the EduChain network in your wallet.",
               variant: "destructive",
             });
+            setNetworkError(true);
             return false;
           }
         }
       }
+      setNetworkError(false);
       return true;
     } catch (error) {
       console.error('Error checking/switching network:', error);
@@ -119,6 +111,7 @@ export const useWallet = () => {
         description: "Could not check or switch networks. Please try again.",
         variant: "destructive",
       });
+      setNetworkError(true);
       return false;
     }
   };
@@ -303,6 +296,7 @@ export const useWallet = () => {
     address,
     isLoading,
     isAuthenticated,
+    networkError,
     connectWallet,
     disconnectWallet,
     formatAddress,
