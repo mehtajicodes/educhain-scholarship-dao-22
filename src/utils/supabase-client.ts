@@ -6,8 +6,8 @@ import type { Database } from '@/integrations/supabase/types';
 // Flag to track API connection status
 let isSupabaseAvailable = true;
 
-// Simplified response type to avoid recursion
-export interface SupabaseResponse<T> {
+// Simplified response type without recursion
+export interface SimpleResponse<T> {
   data: T | null;
   error: any;
 }
@@ -17,10 +17,13 @@ export const executeQuery = async <T>(
   client: any,
   table: string,
   query: string = '*'
-): Promise<SupabaseResponse<T[]>> => {
+): Promise<SimpleResponse<T[]>> => {
   try {
-    const { data, error } = await client.from(table).select(query);
-    return { data: data as T[] | null, error };
+    const response = await client.from(table).select(query);
+    return { 
+      data: response.data as T[] | null, 
+      error: response.error 
+    };
   } catch (error) {
     console.error(`Error executing query on ${table}:`, error);
     return { data: null, error };
@@ -32,10 +35,13 @@ export const executeInsert = async <T>(
   client: any,
   table: string,
   data: Record<string, any>
-): Promise<SupabaseResponse<T>> => {
+): Promise<SimpleResponse<T>> => {
   try {
-    const { data: resultData, error } = await client.from(table).insert(data).select();
-    return { data: resultData?.[0] as T | null, error };
+    const response = await client.from(table).insert(data).select();
+    return { 
+      data: response.data?.[0] as T | null, 
+      error: response.error 
+    };
   } catch (error) {
     console.error(`Error inserting into ${table}:`, error);
     return { data: null, error };
@@ -49,10 +55,13 @@ export const executeUpdate = async <T>(
   data: Record<string, any>,
   column: string,
   value: any
-): Promise<SupabaseResponse<T>> => {
+): Promise<SimpleResponse<T>> => {
   try {
-    const { data: resultData, error } = await client.from(table).update(data).eq(column, value).select();
-    return { data: resultData?.[0] as T | null, error };
+    const response = await client.from(table).update(data).eq(column, value).select();
+    return { 
+      data: response.data?.[0] as T | null, 
+      error: response.error 
+    };
   } catch (error) {
     console.error(`Error updating ${table}:`, error);
     return { data: null, error };
