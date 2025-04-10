@@ -192,7 +192,7 @@ export const useWallet = () => {
             toast({
               title: "Network Required",
               description: "Please connect to the EDU Chain network to use this application.",
-              variant: "warning",
+              variant: "destructive",
             });
             // We still keep the user connected, but they need to fix the network
           }
