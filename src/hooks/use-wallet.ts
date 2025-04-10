@@ -23,13 +23,14 @@ declare global {
   }
 }
 
-// Convert chain ID to hexadecimal to ensure proper format
-const EDUCHAIN_CHAIN_ID = '0x656200'; // Hexadecimal format for chain ID
+// Convert chain ID to decimal and then to hexadecimal to ensure proper format
+// EDU Chain Testnet ID is 6628864 (decimal) which is 0x652600 in hex
+const EDUCHAIN_CHAIN_ID = '0x652600'; // Corrected hexadecimal format for chain ID
 const EDUCHAIN_CONFIG = {
   chainId: EDUCHAIN_CHAIN_ID,
   chainName: 'EDU Chain Testnet',
   nativeCurrency: {
-    name: 'EduChain Ether',
+    name: 'EDU',  // Simplified token name to match network
     symbol: 'EDU',
     decimals: 18,
   },

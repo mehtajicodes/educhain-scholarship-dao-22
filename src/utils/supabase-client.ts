@@ -30,11 +30,11 @@ export const safeSupabaseCall = async <T>(
 };
 
 // Utility function for direct query execution
-export const executeQuery = async (
+export const executeQuery = async <T = any>(
   client: any,
   table: string,
   query: string = '*'
-): Promise<SupabaseResponse<any[]>> => {
+): Promise<{ data: T[] | null; error: any }> => {
   try {
     const response = await client.from(table).select(query);
     return {
@@ -48,11 +48,11 @@ export const executeQuery = async (
 };
 
 // Utility function for direct insert operation
-export const executeInsert = async (
+export const executeInsert = async <T = any>(
   client: any,
   table: string,
   data: Record<string, any>
-): Promise<SupabaseResponse<any>> => {
+): Promise<{ data: T | null; error: any }> => {
   try {
     const response = await client.from(table).insert(data);
     return {
@@ -66,13 +66,13 @@ export const executeInsert = async (
 };
 
 // Utility function for direct update operation
-export const executeUpdate = async (
+export const executeUpdate = async <T = any>(
   client: any,
   table: string,
   data: Record<string, any>,
   column: string,
   value: any
-): Promise<SupabaseResponse<any>> => {
+): Promise<{ data: T | null; error: any }> => {
   try {
     const response = await client.from(table).update(data).eq(column, value);
     return {

@@ -8,7 +8,7 @@ export const fetchScholarshipsData = async (): Promise<Scholarship[]> => {
     console.log("Fetching scholarships data...");
     const client = getSupabaseClient();
     
-    // Fetch scholarships data
+    // Fetch scholarships data directly
     let scholarshipsData: any[] = [];
     
     try {
@@ -31,7 +31,7 @@ export const fetchScholarshipsData = async (): Promise<Scholarship[]> => {
       return MOCK_SCHOLARSHIPS;
     }
 
-    // Fetch applications
+    // Fetch applications directly
     let applicationsData: any[] = [];
     try {
       const response = await client.from('applications').select('*');
@@ -45,7 +45,7 @@ export const fetchScholarshipsData = async (): Promise<Scholarship[]> => {
       console.error("Error in Supabase applications call:", error);
     }
     
-    // Fetch votes
+    // Fetch votes directly
     let votesData: any[] = [];
     try {
       const response = await client.from('votes').select('*');
