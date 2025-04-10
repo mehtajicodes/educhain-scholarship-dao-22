@@ -1,51 +1,72 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from "@/components/ui/button";
-import { User, Lock } from 'lucide-react';
+import { User, Lock, Loader2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { OCAuthSandbox, OCAuthLive } from '@opencampus/ocid-connect-js';
 
-// Configure the OCID Connect SDK
-const ocidConfig = {
-  opts: {
-    redirectUri: window.location.origin, // Redirect back to our app
-    referralCode: 'SCHOLARDAO' // Unique identifier for our app
-  },
-  sandboxMode: true // Set to false for production
+// Initialize the auth SDK based on environment
+const getAuthSdk = () => {
+  const opts = {
+    redirectUri: "https://acehack-scholardao.vercel.app/", // Redirect back to our app
+    // redirectUri: window.location.origin, // Redirect back to our app
+    referralCode: 'SCHOLARDAO', // Unique identifier for our app
+  };
+
+  // Use sandbox mode for development and testing
+  // In production, you would use OCAuthLive with a valid client ID
+  return new OCAuthSandbox(opts);
+  
+  // When you have a valid client ID for production, uncomment this:
+  /*
+  if (process.env.NODE_ENV === 'production') {
+    return new OCAuthLive({
+      ...opts,
+      clientId: 'YOUR_VALID_CLIENT_ID_HERE', // Replace with your actual client ID
+    });
+  } else {
+    return new OCAuthSandbox(opts);
+  }
+  */
 };
 
 export function ConnectOCID() {
   const [isConnecting, setIsConnecting] = useState(false);
   const [ocidConnected, setOcidConnected] = useState(false);
-  const [ocidProfile, setOcidProfile] = useState<any>(null);
+  const [ocidProfile, setOcidProfile] = useState(null);
   const [showProfileDialog, setShowProfileDialog] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if we're returning from an OCID authentication flow
     const checkAuth = async () => {
+      // Check if we're returning from an OCID authentication flow
       if (window.location.search.includes('code=')) {
         setIsConnecting(true);
         try {
-          // Use the OCAuthSandbox directly
-          const OCAuthSandbox = (await import('@opencampus/ocid-connect-js')).OCAuthSandbox;
-          const ocAuth = new OCAuthSandbox(ocidConfig.opts);
-          
-          if (ocAuth.handleLoginRedirect) {
-            const result = await ocAuth.handleLoginRedirect();
-            
-            if (result && result.profile) {
-              setOcidProfile(result.profile);
-              setOcidConnected(true);
-              
-              // Store OCID in localStorage for persistence
-              localStorage.setItem('ocid_profile', JSON.stringify(result.profile));
-              
-              toast({
-                title: "OCID Connected",
-                description: `Welcome, ${result.profile.name || 'User'}!`,
-              });
-            }
+          const authSdk = getAuthSdk();
+          const authState = await authSdk.handleLoginRedirect();
+
+          if (authState && authState.idToken) {
+            const profile = {
+              name: authState.profile?.name,
+              email: authState.profile?.email,
+              picture: authState.profile?.picture,
+              preferred_username: authState.profile?.preferred_username,
+              ocid: authState.OCId, // From SDK documentation
+              eth_address: authState.ethAddress // From SDK documentation
+            };
+
+            setOcidProfile(profile);
+            setOcidConnected(true);
+
+            // Store OCID in localStorage for persistence
+            localStorage.setItem('ocid_profile', JSON.stringify(profile));
+
+            toast({
+              title: "OCID Connected",
+              description: `Welcome, ${profile.name || 'User'}!`,
+            });
           }
         } catch (error) {
           console.error('OCID connection error:', error);
@@ -56,13 +77,13 @@ export function ConnectOCID() {
           });
         } finally {
           setIsConnecting(false);
-          
+
           // Clean up the URL params
           window.history.replaceState({}, document.title, window.location.pathname);
         }
       }
     };
-    
+
     // Check for stored profile
     const storedProfile = localStorage.getItem('ocid_profile');
     if (storedProfile) {
@@ -73,23 +94,19 @@ export function ConnectOCID() {
         localStorage.removeItem('ocid_profile');
       }
     }
-    
+
     checkAuth();
   }, [toast]);
 
   const handleConnect = async () => {
     setIsConnecting(true);
     try {
-      // Initialize the OCID SDK properly
-      const OCAuthSandbox = (await import('@opencampus/ocid-connect-js')).OCAuthSandbox;
-      const ocAuth = new OCAuthSandbox(ocidConfig.opts);
-      
-      if (ocAuth.signInWithRedirect) {
-        // Fixed: Pass an empty object as required by the API
-        await ocAuth.signInWithRedirect({});
-      } else {
-        throw new Error("Login method not available");
-      }
+      const authSdk = getAuthSdk();
+
+      // Pass state parameter as documented
+      await authSdk.signInWithRedirect({
+        state: 'opencampus',
+      });
     } catch (error) {
       console.error('Failed to initiate OCID login:', error);
       setIsConnecting(false);
@@ -101,7 +118,14 @@ export function ConnectOCID() {
     }
   };
 
-  const handleDisconnect = () => {
+  const handleDisconnect = async () => {
+    try {
+      const authSdk = getAuthSdk();
+      await authSdk.logout({ returnTo: window.location.origin });
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+
     localStorage.removeItem('ocid_profile');
     setOcidConnected(false);
     setOcidProfile(null);
@@ -122,7 +146,7 @@ export function ConnectOCID() {
         <Button 
           variant="outline" 
           onClick={handleShowProfile}
-          className="bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100"
+          className="bg-amber-50 text-green-700 border-green-300 hover:bg-green-100"
         >
           <User className="mr-2 h-4 w-4" />
           <span>
@@ -138,36 +162,36 @@ export function ConnectOCID() {
                 Your Open Campus ID profile information
               </DialogDescription>
             </DialogHeader>
-            
+
             <div className="py-4">
               {ocidProfile.picture && (
                 <div className="flex justify-center mb-4">
                   <img 
                     src={ocidProfile.picture} 
                     alt="Profile" 
-                    className="rounded-full w-20 h-20 object-cover border-2 border-amber-300"
+                    className="rounded-full w-20 h-20 object-cover border-2 border-green-300"
                   />
                 </div>
               )}
-              
+
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
+                {/* <div className="flex items-center justify-between">
                   <span className="font-medium text-gray-500">Name:</span>
                   <span className="font-semibold">{ocidProfile.name || 'Not provided'}</span>
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-gray-500">Email:</span>
                   <span className="font-semibold">{ocidProfile.email || 'Not provided'}</span>
-                </div>
-                
+                </div> */}
+
                 {ocidProfile.ocid && (
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-gray-500">OCID:</span>
                     <span className="font-semibold">{ocidProfile.ocid}</span>
                   </div>
                 )}
-                
+
                 {ocidProfile.eth_address && (
                   <div className="flex items-center justify-between">
                     <span className="font-medium text-gray-500">ETH Address:</span>
@@ -176,7 +200,7 @@ export function ConnectOCID() {
                 )}
               </div>
             </div>
-            
+
             <div className="flex justify-end">
               <Button 
                 variant="destructive" 
@@ -195,10 +219,20 @@ export function ConnectOCID() {
     <Button 
       onClick={handleConnect} 
       disabled={isConnecting}
-      className="bg-amber-600 hover:bg-amber-700 text-white"
+      className="bg-[#141BEB] hover:bg-black text-white"
     >
-      <Lock className="mr-2 h-4 w-4" />
-      {isConnecting ? "Connecting..." : "Connect with OCID"}
+      {isConnecting ? (
+        <>
+          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          Connecting...
+        </>
+      ) : (
+        <>
+          {/* <Lock className="mr-2 h-4 w-4" /> */}
+          <img src="/edu.png" className="mr-2 h-6 w-6" alt="OCID Logo" />
+          Connect with OCID
+        </>
+      )}
     </Button>
   );
 }

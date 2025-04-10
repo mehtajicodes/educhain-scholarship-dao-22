@@ -22,11 +22,11 @@ import { useWallet } from "@/hooks/use-wallet";
 import { getSupabaseClient } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ethers } from "ethers";
-import { executeQuery } from "@/utils/supabase-client";
+import { Application } from "@/types/dao";
 
 export function FinancierDashboard() {
-  const { scholarships, fundScholarship, loading } = useDAO();
-  const { address, isAuthenticated, connectWallet } = useWallet();
+  const { scholarships, fundScholarship, loading, fetchScholarships } = useDAO();
+  const { address, isAuthenticated } = useWallet();
   const { toast } = useToast();
   const [fundingInProgress, setFundingInProgress] = useState<string | null>(null);
   const [loadingApplications, setLoadingApplications] = useState(false);
@@ -48,17 +48,19 @@ export function FinancierDashboard() {
     const client = getSupabaseClient();
 
     try {
-      let applications: any[] = [];
+      let applications: Application[] = [];
+      
       try {
-        // Use executeQuery instead of direct Supabase query to fix the type issues
-        const { data, error } = await executeQuery(client, 'applications');
+        // Use a more direct approach to fetch applications
+        const response = await client.from('applications').select('*');
         
-        if (error) {
-          console.error("Error fetching applications:", error);
+        if (response.error) {
+          console.error("Error fetching applications:", response.error);
           throw new Error("Failed to fetch applications");
         }
         
-        applications = data || [];
+        // Explicitly cast the result data
+        applications = (response.data || []) as Application[];
       } catch (error) {
         console.error("Error in Supabase call:", error);
         throw new Error("Database connection error");
@@ -67,34 +69,56 @@ export function FinancierDashboard() {
       setLoadingApplications(false);
 
       const approvedApplications = applications.filter(
-        (app: any) => app.scholarship_id === scholarshipId && app.status === 'approved'
+        (app) => app.scholarship_id === scholarshipId && app.status === 'approved'
       );
 
-      let applicationsToUse = approvedApplications;
-
-      if (!applicationsToUse || applicationsToUse.length === 0) {
+      let applicationToFund: Application | undefined;
+      
+      if (approvedApplications && approvedApplications.length > 0) {
+        applicationToFund = approvedApplications[0];
+      } else {
         const anyApplications = applications.filter(
-          (app: any) => app.scholarship_id === scholarshipId
+          (app) => app.scholarship_id === scholarshipId
         );
 
         if (!anyApplications || anyApplications.length === 0) {
           throw new Error("No application found for this scholarship");
         }
 
-        applicationsToUse = [anyApplications[0]];
+        applicationToFund = anyApplications[0];
+        
+        try {
+          // Update application status directly
+          const updateResponse = await client
+            .from('applications')
+            .update({ status: 'approved' })
+            .eq('id', applicationToFund.id);
+            
+          if (updateResponse.error) {
+            console.error("Error updating application status:", updateResponse.error);
+          } else {
+            console.log("Application approved:", applicationToFund.id);
+          }
+        } catch (error) {
+          console.error("Error updating application status:", error);
+        }
+      }
+
+      if (!applicationToFund) {
+        throw new Error("No application found to fund");
+      }
+
+      const scholarship = scholarships.find((s) => s.id === scholarshipId);
+      if (!scholarship) {
+        throw new Error("Scholarship not found");
       }
 
       if (window.ethereum) {
         const provider = new ethers.providers.Web3Provider(window.ethereum);
         const signer = provider.getSigner();
 
-        const scholarship = scholarships.find((s) => s.id === scholarshipId);
-        if (!scholarship) {
-          throw new Error("Scholarship not found");
-        }
-
         const tx = {
-          to: applicationsToUse[0].applicant_address,
+          to: applicationToFund.applicant_address,
           value: ethers.utils.parseEther(scholarship.amount.toString()),
         };
 
@@ -105,14 +129,48 @@ export function FinancierDashboard() {
           gasLimit: gasEstimate.mul(120).div(100),
         });
 
+        await transaction.wait();
+
+        try {
+          const transactionResponse = await client
+            .from('transactions')
+            .insert({
+              scholarship_id: scholarshipId,
+              application_id: applicationToFund.id,
+              financier_address: address,
+              recipient_address: applicationToFund.applicant_address,
+              amount: scholarship.amount,
+              transaction_hash: transaction.hash,
+              status: 'completed'
+            });
+
+          if (transactionResponse.error) {
+            console.error("Error recording transaction:", transactionResponse.error);
+          }
+        } catch (error) {
+          console.error("Error creating transaction record:", error);
+        }
+
+        try {
+          const updateResponse = await client
+            .from('scholarships')
+            .update({ status: 'completed' })
+            .eq('id', scholarshipId);
+
+          if (updateResponse.error) {
+            console.error("Error updating scholarship status:", updateResponse.error);
+          }
+        } catch (error) {
+          console.error("Error updating scholarship status:", error);
+        }
+
+        await fundScholarship(scholarshipId, applicationToFund.id);
+        fetchScholarships();
+
         toast({
           title: "Payment successful",
           description: `${scholarship.amount} EDU sent to student successfully`,
         });
-
-        await transaction.wait();
-
-        await fundScholarship(scholarshipId, applicationsToUse[0].id);
       } else {
         toast({
           title: "MetaMask not found",
@@ -130,6 +188,7 @@ export function FinancierDashboard() {
       });
     } finally {
       setFundingInProgress(null);
+      setLoadingApplications(false);
     }
   };
 

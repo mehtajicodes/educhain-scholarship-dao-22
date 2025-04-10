@@ -8,8 +8,36 @@ interface MetaMaskError {
   message: string;
 }
 
+// Define a more accurate Ethereum provider type
+interface EthereumProvider {
+  isMetaMask?: boolean;
+  request: (args: { method: string; params?: any[] }) => Promise<any>;
+  on: (event: string, callback: (...args: any[]) => void) => void;
+  removeListener?: (event: string, callback: (...args: any[]) => void) => void;
+}
+
+// Extend the window object with ethereum property
+declare global {
+  interface Window {
+    ethereum?: EthereumProvider;
+  }
+}
+
 // Convert chain ID to hexadecimal to ensure proper format
-const EDUCHAIN_CHAIN_ID = '0xa0348';  // Hexadecimal format for chain ID
+// const EDUCHAIN_CHAIN_ID = '656476'; // Hexadecimal format for chain ID
+// const EDUCHAIN_CONFIG = {
+//   chainId: EDUCHAIN_CHAIN_ID,
+//   chainName: 'EDU Chain Testnet',
+//   nativeCurrency: {
+//     name: 'EduChain Ether',
+//     symbol: 'EDU',
+//     decimals: 18,
+//   },
+//   rpcUrls: ['https://rpc.open-campus-codex.gelato.digital'],
+//   // rpcUrls: ['https://open-campus-codex-sepolia.drpc.org'],
+//   blockExplorerUrls: ['https://opencampus-codex.blockscout.com/'],
+// };
+const EDUCHAIN_CHAIN_ID = '0xA0A8';
 const EDUCHAIN_CONFIG = {
   chainId: EDUCHAIN_CHAIN_ID,
   chainName: 'EDU Chain Testnet',
@@ -253,17 +281,18 @@ export const useWallet = () => {
       window.ethereum.on('accountsChanged', handleAccountsChanged);
       window.ethereum.on('chainChanged', handleChainChanged);
 
-      // Cleanup function that doesn't rely on removeListener
+      // Clean up function that safely handles removeListener
       return () => {
-        // Attempt to use removeListener if available, otherwise use a different approach
-        if (typeof window.ethereum?.removeListener === 'function') {
-          window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
-          window.ethereum.removeListener('chainChanged', handleChainChanged);
-        } else {
-          // Alternative approach: We can't properly remove listeners, but we can
-          // make sure our callback is a no-op by using a flag or similar technique.
-          // This is a workaround for environments where removeListener is not available.
-          console.log('Warning: Could not remove ethereum event listeners. This may cause memory leaks.');
+        // Safely remove event listeners if possible
+        if (window.ethereum) {
+          // Check if removeListener is available (varies by provider implementation)
+          if (typeof window.ethereum.removeListener === 'function') {
+            window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+            window.ethereum.removeListener('chainChanged', handleChainChanged);
+          } else {
+            // If removeListener is not available, we can't do much except log a warning
+            console.log('Note: Event listeners could not be removed from ethereum provider.');
+          }
         }
       };
     }
