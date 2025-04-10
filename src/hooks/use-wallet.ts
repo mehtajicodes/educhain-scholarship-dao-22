@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase, authenticateWithWallet, getAuthenticatedWallet } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -23,15 +22,14 @@ declare global {
   }
 }
 
-// Convert chain ID to decimal and then to hexadecimal to ensure proper format
-// EDU Chain Testnet ID is 6628864 (decimal) which is 0x652600 in hex
-const EDUCHAIN_CHAIN_ID = '0x652600'; // Corrected hexadecimal format for chain ID
+// EDU Chain Testnet configuration with correct chain ID and token symbol
+const EDUCHAIN_CHAIN_ID = '0x652600'; // Hexadecimal format for chain ID
 const EDUCHAIN_CONFIG = {
   chainId: EDUCHAIN_CHAIN_ID,
   chainName: 'EDU Chain Testnet',
   nativeCurrency: {
-    name: 'EDU',  // Simplified token name to match network
-    symbol: 'EDU',
+    name: 'EDU Token',  // Full name to avoid confusion
+    symbol: 'EDU',      // Symbol should match network expectations
     decimals: 18,
   },
   rpcUrls: ['https://open-campus-codex-sepolia.drpc.org'],
@@ -43,6 +41,7 @@ export const useWallet = () => {
   const [address, setAddress] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [networkError, setNetworkError] = useState('');
   const { toast } = useToast();
 
   // Check if an address is already stored in localStorage
@@ -63,45 +62,71 @@ export const useWallet = () => {
       const chainId = await window.ethereum.request({ method: 'eth_chainId' });
       
       if (chainId !== EDUCHAIN_CHAIN_ID) {
+        // First try to switch to the network
         try {
-          // Try to switch to EduChain network
           await window.ethereum.request({
             method: 'wallet_switchEthereumChain',
             params: [{ chainId: EDUCHAIN_CHAIN_ID }],
           });
+          setNetworkError('');
           return true;
         } catch (switchError: any) {
-          // If the chain is not added to MetaMask, add it
+          // This error code indicates that the chain has not been added to MetaMask
           if (switchError.code === 4902) {
             try {
               await window.ethereum.request({
                 method: 'wallet_addEthereumChain',
                 params: [EDUCHAIN_CONFIG],
               });
+              setNetworkError('');
               return true;
-            } catch (addError) {
-              console.error("Error adding network:", addError);
-              toast({
-                title: "Network Error",
-                description: "Could not add the EduChain network to your wallet.",
-                variant: "destructive",
-              });
+            } catch (addError: any) {
+              // Handle user rejection separately to give clearer feedback
+              if (addError.code === 4001) {
+                setNetworkError('You declined to add the EDU Chain network. Please try again.');
+                toast({
+                  title: "Network Addition Cancelled",
+                  description: "You need to add the EDU Chain network to continue. Please try again.",
+                  variant: "destructive",
+                });
+              } else {
+                console.error("Error adding network:", addError);
+                setNetworkError(`Could not add the EDU Chain network: ${addError.message}`);
+                toast({
+                  title: "Network Error",
+                  description: "Could not add the EDU Chain network to your wallet. Please add it manually.",
+                  variant: "destructive",
+                });
+              }
               return false;
             }
+          } else if (switchError.code === 4001) {
+            // User rejected the network switch
+            setNetworkError('You declined to switch to the EDU Chain network. Please try again.');
+            toast({
+              title: "Network Switch Cancelled",
+              description: "You need to switch to the EDU Chain network to continue. Please try again.",
+              variant: "destructive",
+            });
+            return false;
           } else {
             console.error('Error switching network:', switchError);
+            setNetworkError(`Could not switch to the EDU Chain network: ${switchError.message}`);
             toast({
               title: "Network Error",
-              description: "Please switch to the EduChain network in your wallet.",
+              description: "Please switch to the EDU Chain network in your wallet manually.",
               variant: "destructive",
             });
             return false;
           }
         }
       }
+      // We're already on the correct network
+      setNetworkError('');
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error checking/switching network:', error);
+      setNetworkError(`Could not check or switch networks: ${error.message}`);
       toast({
         title: "Wallet Error",
         description: "Could not check or switch networks. Please try again.",
@@ -150,40 +175,53 @@ export const useWallet = () => {
 
     setIsLoading(true);
     try {
-      // Check if we're on the right network first
-      const networkOk = await checkNetwork();
-      if (!networkOk) {
-        setIsLoading(false);
-        return;
+      // First try to get accounts without switching networks to see if we're connected
+      try {
+        const accounts = await window.ethereum.request({
+          method: 'eth_requestAccounts',
+        });
+        
+        if (accounts && accounts.length > 0) {
+          const currentAddress = accounts[0];
+          setAddress(currentAddress);
+          setIsConnected(true);
+          
+          // Now check and switch network if needed
+          const networkOk = await checkNetwork();
+          if (!networkOk) {
+            toast({
+              title: "Network Required",
+              description: "Please connect to the EDU Chain network to use this application.",
+              variant: "warning",
+            });
+            // We still keep the user connected, but they need to fix the network
+          }
+          
+          // Authenticate with Supabase using the wallet address
+          await authenticateUser(currentAddress);
+          
+          toast({
+            title: "Wallet Connected",
+            description: `Connected to ${formatAddress(currentAddress)}`,
+          });
+        }
+      } catch (error: any) {
+        // Handle user rejection of wallet connection
+        if (error.code === 4001) {
+          toast({
+            title: "Connection Cancelled",
+            description: "You declined to connect your wallet. Please try again.",
+            variant: "destructive",
+          });
+        } else {
+          console.error('Error connecting wallet:', error);
+          toast({
+            title: "Connection Failed",
+            description: error.message || "Failed to connect wallet. Please try again.",
+            variant: "destructive",
+          });
+        }
       }
-
-      // Request account access
-      const accounts = await window.ethereum.request({
-        method: 'eth_requestAccounts',
-      });
-
-      if (!accounts || accounts.length === 0) {
-        throw new Error("No accounts found or user rejected the connection");
-      }
-
-      const currentAddress = accounts[0];
-      setAddress(currentAddress);
-      setIsConnected(true);
-      
-      // Authenticate with Supabase using the wallet address
-      await authenticateUser(currentAddress);
-      
-      toast({
-        title: "Wallet Connected",
-        description: `Connected to ${formatAddress(currentAddress)}`,
-      });
-    } catch (error: any) {
-      console.error('Error connecting wallet:', error);
-      toast({
-        title: "Connection Failed",
-        description: error.message || "Failed to connect wallet. Please try again.",
-        variant: "destructive",
-      });
     } finally {
       setIsLoading(false);
     }
@@ -291,6 +329,7 @@ export const useWallet = () => {
     address,
     isLoading,
     isAuthenticated,
+    networkError,
     connectWallet,
     disconnectWallet,
     formatAddress,

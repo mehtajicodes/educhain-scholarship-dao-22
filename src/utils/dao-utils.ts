@@ -8,19 +8,19 @@ export const fetchScholarshipsData = async (): Promise<Scholarship[]> => {
     console.log("Fetching scholarships data...");
     const client = getSupabaseClient();
     
-    // Fetch scholarships data directly
+    // Fetch scholarships data directly with inline promise handling
     let scholarshipsData: any[] = [];
     
     try {
-      // Direct call without using utility functions that might cause type recursion
-      const response = await client.from('scholarships').select('*');
+      // Directly use the client without any utility functions
+      const { data, error } = await client.from('scholarships').select('*');
       
-      if (response.error) {
-        console.error("Error fetching scholarships:", response.error);
+      if (error) {
+        console.error("Error fetching scholarships:", error);
         return MOCK_SCHOLARSHIPS;
       }
       
-      scholarshipsData = response.data || [];
+      scholarshipsData = data || [];
     } catch (error) {
       console.error("Error in Supabase call:", error);
       return MOCK_SCHOLARSHIPS;
@@ -36,12 +36,12 @@ export const fetchScholarshipsData = async (): Promise<Scholarship[]> => {
     let applicationsData: any[] = [];
     try {
       // Direct call without utility function
-      const response = await client.from('applications').select('*');
+      const { data, error } = await client.from('applications').select('*');
       
-      if (response.error) {
-        console.error("Error fetching applications:", response.error);
+      if (error) {
+        console.error("Error fetching applications:", error);
       } else {
-        applicationsData = response.data || [];
+        applicationsData = data || [];
       }
     } catch (error) {
       console.error("Error in Supabase applications call:", error);
@@ -51,12 +51,12 @@ export const fetchScholarshipsData = async (): Promise<Scholarship[]> => {
     let votesData: any[] = [];
     try {
       // Direct call without utility function
-      const response = await client.from('votes').select('*');
+      const { data, error } = await client.from('votes').select('*');
       
-      if (response.error) {
-        console.error("Error fetching votes:", response.error);
+      if (error) {
+        console.error("Error fetching votes:", error);
       } else {
-        votesData = response.data || [];
+        votesData = data || [];
       }
     } catch (error) {
       console.error("Error in Supabase votes call:", error);
@@ -111,16 +111,16 @@ export const fetchUserApplications = async (address: string): Promise<any[]> => 
     const client = getSupabaseClient();
     
     try {
-      // Direct call without utility functions
-      const response = await client.from('applications').select('*');
+      // Direct Supabase call without utility functions
+      const { data, error } = await client.from('applications').select('*');
       
-      if (response.error) {
-        console.error("Error fetching applications:", response.error);
+      if (error) {
+        console.error("Error fetching applications:", error);
         return [];
       }
       
       // Filter applications by applicant address
-      return (response.data || []).filter((app: any) => app.applicant_address === address);
+      return (data || []).filter((app: any) => app.applicant_address === address);
     } catch (error) {
       console.error("Error in Supabase call:", error);
       return [];
@@ -144,14 +144,14 @@ export const applyForScholarshipSafely = async (scholarshipId: string, address: 
     let existingApps = [];
     try {
       // Direct call without utility functions
-      const response = await client.from('applications').select('*');
+      const { data, error } = await client.from('applications').select('*');
       
-      if (response.error) {
-        console.error("Error checking existing applications:", response.error);
+      if (error) {
+        console.error("Error checking existing applications:", error);
         // If we can't check, assume no existing application and try to create one
       } else {
         // Filter applications locally
-        existingApps = (response.data || []).filter(
+        existingApps = (data || []).filter(
           (app: any) => app.scholarship_id === scholarshipId && app.applicant_address === address
         );
         
@@ -167,14 +167,14 @@ export const applyForScholarshipSafely = async (scholarshipId: string, address: 
     // Insert new application
     try {
       // Direct call without utility functions
-      const response = await client.from('applications').insert({
+      const { data, error } = await client.from('applications').insert({
         scholarship_id: scholarshipId,
         applicant_address: address,
       });
       
-      if (response.error) {
-        console.error("Error applying for scholarship:", response.error);
-        return { success: false, error: response.error.message || "Failed to apply" };
+      if (error) {
+        console.error("Error applying for scholarship:", error);
+        return { success: false, error: error.message || "Failed to apply" };
       }
       
       return { success: true, error: null };
